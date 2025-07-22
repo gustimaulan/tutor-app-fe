@@ -11,7 +11,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',  // Changed from 3000 to 3001
+        target: import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001',
         changeOrigin: true,
         secure: false,
         withCredentials: true,

@@ -3,7 +3,7 @@ import axios from 'axios'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 
 // Configure axios defaults
-const API_URL = 'http://localhost:3001/api'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 
 // Add request interceptor to include JWT token
 axios.interceptors.request.use(
