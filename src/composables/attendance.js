@@ -82,27 +82,52 @@ export function useAttendance(options = {}) {
   const queryClient = useQueryClient()
   const authStore = useAuthStore()
 
-  // Queries
+  // Queries with improved caching
   const tutorsQuery = useQuery({
     queryKey: ['tutors'],
     queryFn: fetchTutors,
-    staleTime: 60000, // 1 minute
-    refetchOnWindowFocus: false
+    staleTime: 10 * 60 * 1000, // 10 minutes - tutors don't change often
+    gcTime: 30 * 60 * 1000, // 30 minutes garbage collection
+    refetchOnWindowFocus: false,
+    refetchOnMount: false, // Don't refetch on component mount if data is fresh
+    refetchOnReconnect: true // Only refetch when reconnecting to internet
   })
 
   const studentsQuery = useQuery({
     queryKey: ['students'],
     queryFn: fetchStudents,
-    staleTime: 60000, // 1 minute
-    refetchOnWindowFocus: false
+    staleTime: 10 * 60 * 1000, // 10 minutes - students don't change often
+    gcTime: 30 * 60 * 1000, // 30 minutes garbage collection
+    refetchOnWindowFocus: false,
+    refetchOnMount: false, // Don't refetch on component mount if data is fresh
+    refetchOnReconnect: true
+  })
+
+  // Simplified query key to prevent unnecessary cache invalidation
+  const recordsQueryKey = computed(() => {
+    const baseKey = ['records']
+    const page = (typeof options.page === 'object' && options.page?.value !== undefined) ? options.page.value : (options.page || 1)
+    const limit = (typeof options.limit === 'object' && options.limit?.value !== undefined) ? options.limit.value : (options.limit || 25)
+    
+    // Only include user-specific info if not admin
+    if (authStore.user?.role !== 'admin') {
+      return [...baseKey, page, limit, authStore.user?.name]
+    }
+    return [...baseKey, page, limit, 'admin']
   })
 
   const recordsQuery = useQuery({
-    queryKey: ['records', options.page || 1, options.limit || 25, authStore.user?.name, authStore.user?.role],
-    queryFn: () => fetchRecords({ page: options.page || 1, limit: options.limit || 25, authStore }),
-    staleTime: 30000, // 30 seconds
+    queryKey: recordsQueryKey,
+    queryFn: () => {
+      const page = (typeof options.page === 'object' && options.page?.value !== undefined) ? options.page.value : (options.page || 1)
+      const limit = (typeof options.limit === 'object' && options.limit?.value !== undefined) ? options.limit.value : (options.limit || 25)
+      return fetchRecords({ page, limit, authStore })
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes - attendance records change more frequently
+    gcTime: 15 * 60 * 1000, // 15 minutes garbage collection
     refetchOnWindowFocus: false,
-    refetchOnMount: true,
+    refetchOnMount: false, // Don't refetch on component mount if data is fresh
+    refetchOnReconnect: true,
     enabled: !!authStore.user, // Only run query when user is loaded
     onSuccess: (data) => {
       console.log('Attendance composable: Records loaded successfully:', data)
@@ -124,10 +149,11 @@ export function useAttendance(options = {}) {
   // Pagination info
   const pagination = computed(() => recordsQuery.data.value?.pagination || {})
 
-  // Mutations
+  // Mutations with optimized cache invalidation
   const submitMutation = useMutation({
     mutationFn: submitAttendance,
     onSuccess: () => {
+      // Only invalidate records queries, not tutors/students
       queryClient.invalidateQueries({ queryKey: ['records'] })
     },
     onError: (error) => {
@@ -138,6 +164,7 @@ export function useAttendance(options = {}) {
   const deleteMutation = useMutation({
     mutationFn: (record_id) => deleteRecord(record_id),
     onSuccess: () => {
+      // Only invalidate records queries
       queryClient.invalidateQueries({ queryKey: ['records'] })
     },
     onError: (error) => {

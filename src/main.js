@@ -59,7 +59,10 @@ app.use(VueQueryPlugin, {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: 30000,
+      refetchOnMount: false, // Don't automatically refetch on component mount
+      refetchOnReconnect: true, // Only refetch when reconnecting
+      staleTime: 5 * 60 * 1000, // 5 minutes default stale time
+      gcTime: 10 * 60 * 1000, // 10 minutes garbage collection time
     },
   },
 })

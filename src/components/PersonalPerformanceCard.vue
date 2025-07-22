@@ -243,8 +243,11 @@ const recordsQuery = useQuery({
   queryKey: ['performance-records', authStore.user?.name, authStore.user?.role],
   queryFn: fetchRecordsForPerformance,
   enabled: !!authStore.user,
-  staleTime: 60000, // 1 minute cache
+  staleTime: 5 * 60 * 1000, // 5 minutes cache - consistent with main attendance composable
+  gcTime: 15 * 60 * 1000, // 15 minutes garbage collection
   refetchOnWindowFocus: false,
+  refetchOnMount: false, // Don't refetch on component mount if data is fresh
+  refetchOnReconnect: true,
   onSuccess: (data) => {
     console.log('PersonalPerformanceCard: Records loaded successfully:', data)
   },

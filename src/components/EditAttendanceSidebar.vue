@@ -317,6 +317,9 @@ const handleSubmit = async () => {
           <div 
             v-if="isOpen"
             class="ml-auto w-full sm:w-80 bg-white shadow-xl flex flex-col relative transform transition-transform h-full sm:h-auto"
+            @touchmove.stop
+            @touchstart.stop
+            @touchend.stop
           >
             <!-- Header -->
             <div class="flex justify-between items-center p-4 sm:p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
@@ -332,7 +335,7 @@ const handleSubmit = async () => {
             </div>
             
             <!-- Form Content -->
-            <div class="p-4 sm:p-4 flex-1 overflow-y-auto">
+            <div class="p-4 sm:p-4 flex-1 overflow-y-auto overscroll-contain">
               <form @submit.prevent="handleSubmit" class="space-y-6">
                 <!-- Tutor Name -->
                 <div>
@@ -630,5 +633,19 @@ const handleSubmit = async () => {
 .slide-enter-from,
 .slide-leave-to {
   transform: translateX(100%);
+}
+
+/* Prevent unwanted touch behaviors on mobile */
+@media (max-width: 640px) {
+  .fixed.inset-0 {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Prevent pull-to-refresh and other unwanted gestures */
+  .ml-auto {
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+  }
 }
 </style> 
