@@ -16,6 +16,12 @@ export function useSwipeNavigation() {
     useGesture(
       {
         onDrag: ({ movement: [mx, my], direction: [xDir, yDir], velocity: [vx, vy], cancel }) => {
+          // Don't trigger swipe navigation if there are open modals/overlays
+          const hasOpenModal = document.querySelector('.fixed.inset-0.z-50') !== null
+          if (hasOpenModal) {
+            return
+          }
+          
           // Only trigger on horizontal swipes with sufficient velocity
           if (Math.abs(mx) > Math.abs(my) && Math.abs(vx) > 0.5) {
             const currentPath = router.currentRoute.value.path
