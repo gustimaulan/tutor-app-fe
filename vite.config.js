@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [
     vue(),
     tailwindcss(),
+    vuedevtools(),
   ],
   server: {
     proxy: {

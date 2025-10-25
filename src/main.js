@@ -37,17 +37,6 @@ const router = createRouter({
   ]
 })
 
-// Preload components for faster navigation (commented out to avoid issues)
-// const preloadComponents = () => {
-//   // Preload all components immediately
-//   import('./views/Home.vue')
-//   import('./views/Attendance.vue')
-//   import('./views/Login.vue')
-// }
-
-// Preload on app start
-// preloadComponents()
-
 // Create app
 const app = createApp(App)
 const pinia = createPinia()
@@ -59,22 +48,21 @@ app.use(VueQueryPlugin, {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: 30000,
+      staleTime: 60000,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
     },
   },
 })
 
 // Initialize auth store after Pinia is installed
 const authStore = useAuthStore()
-authStore.init()
 
-// Try to fetch user data on app start if token exists
-if (authStore.token && !authStore.user) {
-  authStore.fetchUser().catch(() => {
-    // If fetch fails, clear invalid token
-    authStore.clearAuth()
-  })
-}
+// Try to fetch user data on app start to check session
+authStore.fetchUser().catch(() => {
+  // If fetch fails, user is not authenticated (no session)
+  console.log('No active session found')
+})
 
 // Navigation guard (after Pinia is installed)
 router.beforeEach(async (to, from, next) => {
@@ -82,24 +70,16 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth) {
     // Check if user is authenticated
     if (!authStore.isAuthenticated) {
-      // Redirect to login if not authenticated
-      next('/login')
-      return
-    }
-    
-    // If we have a token but no user data, try to fetch user
-    if (!authStore.user && authStore.token) {
+      // Try to fetch user data to check for active session
       try {
         const success = await authStore.fetchUser()
         if (!success) {
-          // Token is invalid, clear auth and redirect to login
-          authStore.clearAuth()
+          // No active session, redirect to login
           next('/login')
           return
         }
       } catch (error) {
-        // Token is invalid, clear auth and redirect to login
-        authStore.clearAuth()
+        // No active session, redirect to login
         next('/login')
         return
       }

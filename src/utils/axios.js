@@ -6,22 +6,10 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 const apiClient = axios.create({
   baseURL: API_URL,
   timeout: 10000,
+  withCredentials: true // Enable cookies for session-based auth
 })
 
-// Add request interceptor to include JWT token
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken')
-    console.log('API Client interceptor: Token from localStorage:', token)
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-      console.log('API Client interceptor: Auth header set:', config.headers.Authorization)
-    }
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
-  }
-)
+// Remove JWT token interceptor since backend uses sessions
+// No need for Authorization header interceptor
 
 export default apiClient

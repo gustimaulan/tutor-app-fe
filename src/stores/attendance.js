@@ -171,7 +171,7 @@ export const useAttendanceStore = defineStore('attendance', {
           student_name: data.student_name,
           tutoring_date: data.tutoring_date,
           tutoring_time: data.tutoring_time,
-          proof_of_teaching: data.proof_of_teaching,
+          attendance_proof: data.attendance_proof,
           email: data.email
         })
         console.log('Attendance submission response:', response.data)

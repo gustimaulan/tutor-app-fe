@@ -31,9 +31,9 @@ const {
 const form = ref({
   tutor_name: '',
   email: '',
-  student_name: '',
-  tutoring_date: '',
-  tutoring_time: '',
+  student_name: '',       // Standardized to English
+  tutoring_date: '',      // Standardized to English
+  tutoring_time: '',      // Standardized to English
   proof_of_teaching: ''
 })
 
@@ -46,6 +46,8 @@ const isUploading = ref(false)
 const isCompressing = ref(false)
 const isSubmitting = ref(false)
 const fileInput = ref(null)
+const imageLoadError = ref(false)
+const showImagePreview = ref(true)
 
 // Error state
 const formError = ref('')
@@ -60,10 +62,10 @@ const isLoggedIn = computed(() => {
 })
 
 const isFormValid = computed(() => {
-  return form.value.tutor_name && 
-         form.value.student_name && 
-         form.value.tutoring_date && 
-         form.value.tutoring_time
+  return form.value.tutor_name &&
+         form.value.student_name &&     // Standardized to English
+         form.value.tutoring_date &&    // Standardized to English
+         form.value.tutoring_time     // Standardized to English
 })
 
 // Watch for sidebar opening to populate form
@@ -73,6 +75,8 @@ watch(() => props.isOpen, (newValue) => {
     form.value = { ...props.record }
     console.log('EditAttendanceSidebar: Form after population:', form.value)
     console.log('EditAttendanceSidebar: Available students:', students)
+    console.log('EditAttendanceSidebar: Form proof_of_teaching:', form.value.proof_of_teaching)
+    console.log('EditAttendanceSidebar: Form attendance_proof:', form.value.attendance_proof)
   }
 })
 
@@ -226,8 +230,8 @@ const uploadFile = async (file) => {
 
   const formData = new FormData()
   formData.append('file', fileToUpload)
-  formData.append('studentName', form.value.student_name)
-  formData.append('date', form.value.tutoring_date)
+  formData.append('studentName', form.value.student_name)  // Standardized to English
+  formData.append('date', form.value.tutoring_date)      // Standardized to English
   
   try {
     const response = await apiClient.post('/upload-proof', formData, {
@@ -295,6 +299,32 @@ const handleSubmit = async () => {
       console.error('Error details:', err.response.data.details)
     }
   }
+}
+
+// Image error handling
+const handleImageError = () => {
+  console.log('Image failed to load')
+  imageLoadError.value = true
+}
+
+const handleImageLoad = () => {
+  console.log('Image loaded successfully')
+  imageLoadError.value = false
+}
+
+// Toggle image preview
+const toggleImagePreview = () => {
+  showImagePreview.value = !showImagePreview.value
+}
+
+// Clear image preview
+const clearImagePreview = () => {
+  showImagePreview.value = false
+}
+
+const replaceImage = () => {
+  showImagePreview.value = false
+  fileInput.value?.click()
 }
 </script>
 
@@ -378,7 +408,7 @@ const handleSubmit = async () => {
                     required
                   >
                     <option value="">Select a student</option>
-                    <option v-for="student in students || []" :key="student.name" :value="student.name">
+                    <option v-for="student in students || []" :key="student.id" :value="student.name">
                       {{ student.name }}
                     </option>
                   </select>
@@ -426,22 +456,47 @@ const handleSubmit = async () => {
                   </label>
                   
                   <!-- Current Image Preview -->
-                  <div v-if="form.proof_of_teaching && !selectedFile" class="mb-4">
-                    <img 
-                      :src="form.proof_of_teaching" 
-                      alt="Current proof"
-                      class="w-full h-32 object-cover rounded-lg"
-                    />
+                  <div v-if="(form.proof_of_teaching || form.attendance_proof) && !selectedFile && showImagePreview" class="mb-4">
+                    <div class="relative">
+                      <img
+                        :src="form.proof_of_teaching || form.attendance_proof"
+                        alt="Current proof"
+                        class="w-full h-64 object-cover rounded-lg"
+                        @error="handleImageError"
+                        @load="handleImageLoad"
+                      />
+                      <button
+                        type="button"
+                        @click="clearImagePreview"
+                        class="absolute top-2 right-2 bg-white rounded-full p-1 shadow-md hover:bg-gray-100 transition-colors"
+                        title="Close image preview"
+                      >
+                        <svg class="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        @click="replaceImage"
+                        class="absolute bottom-2 right-2 bg-blue-600 text-white rounded-full p-1 shadow-md hover:bg-blue-700 transition-colors"
+                        title="Replace image"
+                      >
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    </div>
                     <p class="text-xs text-gray-500 mt-1">Current image</p>
                   </div>
                   
                   <!-- Image Upload -->
-                  <div 
-                    class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer"
-                    @dragover="handleDragOver"
-                    @drop="handleDrop"
-                    @click="fileInput?.click()"
-                  >
+                 <div
+                   v-if="!selectedFile && !showImagePreview"
+                   class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer"
+                   @dragover="handleDragOver"
+                   @drop="handleDrop"
+                   @click="fileInput?.click()"
+                 >
                     <input
                       type="file"
                       @change="handleFileSelect"
@@ -450,7 +505,7 @@ const handleSubmit = async () => {
                       ref="fileInput"
                     />
                     
-                    <div v-if="!selectedFile && !isUploading">
+                    <div v-if="!selectedFile && !isUploading && !showImagePreview">
                       <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                         <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                       </svg>
@@ -499,7 +554,7 @@ const handleSubmit = async () => {
                     <div v-if="compressionStats" class="bg-green-50 border border-green-200 rounded-lg p-3">
                       <div class="flex items-center mb-2">
                         <svg class="h-4 w-4 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L8.586 10l-1.293 1.293a1 1 0 001.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
                         </svg>
                         <span class="text-sm font-medium text-green-800">Compression Complete!</span>
                       </div>
@@ -631,4 +686,4 @@ const handleSubmit = async () => {
 .slide-leave-to {
   transform: translateX(100%);
 }
-</style> 
+</style>

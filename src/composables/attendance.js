@@ -10,7 +10,10 @@ const fetchTutors = async () => {
 }
 
 const fetchStudents = async () => {
+  console.log('Fetching students from API...')
   const response = await apiClient.get('/students')
+  console.log('Students API response:', response.data)
+  // ✅ Extract students array from response
   return response.data
 }
 
@@ -33,12 +36,15 @@ const fetchRecords = async ({ page = 1, limit = 25, authStore } = {}) => {
   
   console.log('Final request params:', params)
   
+  // In the fetchRecords function (around line 40)
   try {
     const response = await apiClient.get('/attendance', { params })
     console.log('Records response:', response.data)
-    console.log('Records array:', response.data.records)
-    console.log('Records array length:', response.data.records?.length)
-    return response.data
+    // Update to return the correct structure:
+    return {
+      records: response.data.data || [],
+      pagination: response.data.pagination || {}
+    }
   } catch (error) {
     console.error('Error fetching records:', error)
     console.error('Error response:', error.response?.data)
@@ -49,9 +55,9 @@ const fetchRecords = async ({ page = 1, limit = 25, authStore } = {}) => {
 const submitAttendance = async (data) => {
   const response = await apiClient.post('/attendance', {
     tutor_name: data.tutor_name,
-    student_name: data.student_name,
-    tutoring_date: data.tutoring_date,
-    tutoring_time: data.tutoring_time,
+    student_name: data.student_name,        // Standardized to English
+    tutoring_date: data.tutoring_date,      // Standardized to English
+    tutoring_time: data.tutoring_time,      // Standardized to English
     proof_of_teaching: data.proof_of_teaching,
     email: data.email
   })
@@ -86,23 +92,25 @@ export function useAttendance(options = {}) {
   const tutorsQuery = useQuery({
     queryKey: ['tutors'],
     queryFn: fetchTutors,
-    staleTime: 60000, // 1 minute
-    refetchOnWindowFocus: false
+    staleTime: 300000, // 5 minutes - increased cache time
+    refetchOnWindowFocus: false,
+    refetchOnMount: false // Don't refetch on mount if data exists
   })
 
   const studentsQuery = useQuery({
     queryKey: ['students'],
     queryFn: fetchStudents,
-    staleTime: 60000, // 1 minute
-    refetchOnWindowFocus: false
+    staleTime: 300000, // 5 minutes - increased cache time
+    refetchOnWindowFocus: false,
+    refetchOnMount: true // Force refetch on mount to ensure fresh data
   })
 
   const recordsQuery = useQuery({
-    queryKey: ['records', options.page || 1, options.limit || 25, authStore.user?.name, authStore.user?.role],
+    queryKey: ['records', options.page || 1, options.limit || 25, authStore.user?.id], // Use user ID instead of name/role
     queryFn: () => fetchRecords({ page: options.page || 1, limit: options.limit || 25, authStore }),
-    staleTime: 30000, // 30 seconds
+    staleTime: 60000, // 1 minute - increased from 30 seconds
     refetchOnWindowFocus: false,
-    refetchOnMount: true,
+    refetchOnMount: false, // Changed from true to false
     enabled: !!authStore.user, // Only run query when user is loaded
     onSuccess: (data) => {
       console.log('Attendance composable: Records loaded successfully:', data)
@@ -117,7 +125,7 @@ export function useAttendance(options = {}) {
   const userRecords = computed(() => {
     if (!recordsQuery.data.value || !authStore.user) return []
     
-    // Since we're now using server-side filtering, return records from the response
+    // Since we're now using server-side filtering, return records from response
     return recordsQuery.data.value.records || []
   })
 
@@ -165,4 +173,4 @@ export function useAttendance(options = {}) {
     refetch: recordsQuery.refetch,
     updateAttendance,
   }
-} 
+}

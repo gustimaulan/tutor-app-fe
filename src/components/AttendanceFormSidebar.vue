@@ -26,9 +26,9 @@ const {
 const form = ref({
   tutor_name: '',
   email: '',
-  student_name: '',
-  tutoring_date: '',
-  tutoring_time: '',
+  student_name: '',       // Standardized to English
+  tutoring_date: '',      // Standardized to English
+  tutoring_time: '',      // Standardized to English
   proof_of_teaching: ''
 })
 
@@ -55,10 +55,10 @@ const isLoggedIn = computed(() => {
 })
 
 const isFormValid = computed(() => {
-  return form.value.tutor_name && 
-         form.value.student_name && 
-         form.value.tutoring_date && 
-         form.value.tutoring_time && 
+  return form.value.tutor_name &&
+         form.value.student_name &&     // Standardized to English
+         form.value.tutoring_date &&    // Standardized to English
+         form.value.tutoring_time &&    // Standardized to English
          selectedFile.value
 })
 
@@ -78,9 +78,9 @@ const resetForm = () => {
     form.value.tutor_name = ''
     form.value.email = ''
   }
-  form.value.student_name = ''
-  form.value.tutoring_date = ''
-  form.value.tutoring_time = ''
+  form.value.student_name = ''       // Standardized to English
+  form.value.tutoring_date = ''      // Standardized to English
+  form.value.tutoring_time = ''      // Standardized to English
   form.value.proof_of_teaching = ''
   selectedFile.value = null
   compressedFile.value = null
@@ -227,8 +227,8 @@ const uploadFile = async (file) => {
 
   const formData = new FormData()
   formData.append('file', fileToUpload)
-  formData.append('studentName', form.value.student_name)
-  formData.append('date', form.value.tutoring_date)
+  formData.append('studentName', form.value.student_name)  // Standardized to English
+  formData.append('date', form.value.tutoring_date)      // Standardized to English
   
   try {
     const response = await apiClient.post('/upload-proof', formData, {
@@ -285,6 +285,8 @@ const handleSubmit = async () => {
     formError.value = err.response?.data?.details || err.response?.data?.error || err.message || 'Failed to submit attendance'
   }
 }
+
+
 </script>
 
 <template>
@@ -479,7 +481,7 @@ const handleSubmit = async () => {
                       <div v-if="compressionStats" class="bg-green-50 border border-green-200 rounded-lg p-3">
                         <div class="flex items-center mb-2">
                           <svg class="h-4 w-4 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L8.586 10l-1.293 1.293a1 1 0 001.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                           </svg>
                           <span class="text-sm font-medium text-green-800">Compression Complete!</span>
                         </div>
@@ -612,4 +614,4 @@ const handleSubmit = async () => {
 .slide-leave-to {
   transform: translateX(100%);
 }
-</style> 
+</style>

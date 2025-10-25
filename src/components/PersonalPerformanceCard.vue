@@ -160,6 +160,7 @@
         <div v-if="recentSessions.length > 0" class="bg-white border border-gray-200 rounded-lg p-4">
           <h4 class="text-lg font-medium text-gray-900 mb-4">{{ authStore.user?.role === 'admin' ? 'Recent Activity' : 'Recent Sessions' }}</h4>
           <div class="space-y-3">
+            <!-- Recent Activity table template (lines 158-175) -->
             <div 
               v-for="session in recentSessions.slice(0, 10)" 
               :key="session.timestamp"
@@ -168,12 +169,12 @@
               <div class="flex items-center space-x-3">
                 <div class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
                 <div class="min-w-0 flex-1">
-                  <div class="text-sm font-medium text-gray-900 truncate">{{ session.student_name }}</div>
-                  <div class="text-xs text-gray-500">{{ formatDate(session.tutoring_date) }} at {{ session.tutoring_time }}</div>
+                  <div class="text-sm font-medium text-gray-900 truncate">{{ session.nama_siswa || session.student_name }}</div>
+                  <div class="text-xs text-gray-500">{{ formatDate(session.tanggal || session.tutoring_date) }} at {{ session.waktu || session.tutoring_time }}</div>
                 </div>
               </div>
               <div class="text-xs text-gray-400 sm:ml-4 pl-5 sm:pl-0">
-                {{ getTimeAgo(session.tutoring_date, session.tutoring_time) }}
+                {{ getTimeAgo(session.tanggal || session.tutoring_date, session.waktu || session.tutoring_time) }}
               </div>
             </div>
           </div>
@@ -209,18 +210,15 @@ const authStore = useAuthStore()
 const fetchRecordsForPerformance = async () => {
   console.log('PersonalPerformanceCard: Fetching records for performance')
   console.log('Auth store user:', authStore.user)
-  console.log('Auth token:', localStorage.getItem('authToken'))
   
-  // For performance card, we need all records for the current user
-  // Use a larger limit to get more records in fewer requests
   const params = { 
     page: 1, 
-    limit: 1000 // Get more records in one request
+    limit: 1000
   }
   
-  // Only filter by tutor if not admin
+  // Only filter by email if not admin
   if (authStore.user?.role !== 'admin') {
-    params.tutor_name = authStore.user?.name
+    params.email = authStore.user?.email // Changed from tutor_name to email
   }
   
   console.log('PersonalPerformanceCard: Request params:', params)
@@ -228,9 +226,8 @@ const fetchRecordsForPerformance = async () => {
   try {
     const response = await apiClient.get('/attendance', { params })
     console.log('PersonalPerformanceCard: Response:', response.data)
-    console.log('PersonalPerformanceCard: Records array:', response.data.records)
-    console.log('PersonalPerformanceCard: Records array length:', response.data.records?.length)
-    return response.data.records || response.data
+    // Change this line:
+    return response.data.data || response.data // Use 'data' instead of 'records'
   } catch (error) {
     console.error('PersonalPerformanceCard: Error fetching records:', error)
     console.error('PersonalPerformanceCard: Error response:', error.response?.data)
@@ -240,11 +237,12 @@ const fetchRecordsForPerformance = async () => {
 
 // Use optimized records query for this component
 const recordsQuery = useQuery({
-  queryKey: ['performance-records', authStore.user?.name, authStore.user?.role],
+  queryKey: ['performance-records', authStore.user?.id], // Use user ID instead of name/role
   queryFn: fetchRecordsForPerformance,
   enabled: !!authStore.user,
-  staleTime: 60000, // 1 minute cache
+  staleTime: 120000, // 2 minutes cache - increased
   refetchOnWindowFocus: false,
+  refetchOnMount: false, // Don't refetch on mount if data exists
   onSuccess: (data) => {
     console.log('PersonalPerformanceCard: Records loaded successfully:', data)
   },
@@ -286,8 +284,6 @@ const currentUser = computed(() => authStore.user)
 const userRecords = computed(() => {
   if (!recordsQuery.data.value || !authStore.user) return []
   
-  // If server-side filtering is working, we might not need client-side filtering
-  // But keep it as fallback for now
   const records = recordsQuery.data.value
   
   // Admin users can see all records
@@ -295,9 +291,8 @@ const userRecords = computed(() => {
     return records
   }
   
-  // Regular users see only their own records
-  const currentUserName = authStore.user.name
-  return records.filter(record => record.tutor_name === currentUserName)
+  // For regular users, the backend already filtered by email, so return all records
+  return records
 })
 
 // Loading state - only depends on records query
@@ -430,7 +425,7 @@ const isDateInRange = (dateString, range) => {
   return dateString >= rangeStartStr && dateString < rangeEndStr
 }
 
-// Filtered records for the selected period
+// Fix the filteredRecords computed property
 const filteredRecords = computed(() => {
   if (!userRecords.value) return []
   
@@ -440,8 +435,8 @@ const filteredRecords = computed(() => {
   console.log('All records:', userRecords.value)
   
   const filtered = userRecords.value.filter(record => {
-    const inRange = isDateInRange(record.tutoring_date, range)
-    console.log(`Record ${record.tutoring_date} in range:`, inRange)
+    const inRange = isDateInRange(record.tanggal || record.tutoring_date, range)
+    console.log(`Record ${record.tanggal || record.tutoring_date} in range:`, inRange)
     return inRange
   })
   
@@ -449,11 +444,11 @@ const filteredRecords = computed(() => {
   return filtered
 })
 
-// User statistics
+// Fix the userStats computed property
 const userStats = computed(() => {
   const records = filteredRecords.value
   const totalSessions = records.length
-  const uniqueStudents = new Set(records.map(r => r.student_name)).size
+  const uniqueStudents = new Set(records.map(r => r.nama_siswa || r.student_name)).size
   
   // Debug logging
   console.log('PersonalPerformanceCard: userStats computed')
@@ -492,7 +487,7 @@ const recentSessions = computed(() => {
 const calculateStreak = (records) => {
   if (!records.length) return 0
   
-  const dates = [...new Set(records.map(r => r.tutoring_date))].sort().reverse()
+  const dates = [...new Set(records.map(r => r.tanggal || r.tutoring_date))].sort().reverse()
   let streak = 0
   const today = new Date().toISOString().split('T')[0]
   
@@ -524,21 +519,27 @@ const chartData = computed(() => {
   console.log('PersonalPerformanceCard: chartData computed')
   console.log('Periods:', periods)
   console.log('User records:', userRecords.value)
+  console.log('User records length:', userRecords.value?.length)
+  console.log('User records sample:', userRecords.value?.slice(0, 3))
   
   // Calculate sessions per period using string comparison
   const sessionsPerPeriod = periods.map(period => {
-    const periodStartStr = period.start.toISOString().split('T')[0]
-    const periodEndStr = period.end.toISOString().split('T')[0]
-    
-    const sessionsInPeriod = userRecords.value.filter(record => {
-      const recordDate = record.tutoring_date
-      const inRange = recordDate >= periodStartStr && recordDate < periodEndStr
-      console.log(`Record ${recordDate} in period ${periodStartStr}-${periodEndStr}:`, inRange)
-      return inRange
-    }).length
-    
-    console.log(`Period ${period.label}: ${sessionsInPeriod} sessions`)
-    return sessionsInPeriod
+  const periodStartStr = period.start.toISOString().split('T')[0]
+  const periodEndStr = period.end.toISOString().split('T')[0]
+  
+  // Filter out undefined/null records and use correct field name 'tanggal' or 'tutoring_date'
+  const validRecords = userRecords.value.filter(record => record && (record.tanggal || record.tutoring_date))
+  console.log(`Valid records for period ${periodStartStr}-${periodEndStr}:`, validRecords.length)
+  
+  const sessionsInPeriod = validRecords.filter(record => {
+  const recordDate = record.tanggal || record.tutoring_date
+  const inRange = recordDate >= periodStartStr && recordDate < periodEndStr
+  console.log(`Record ${recordDate} in period ${periodStartStr}-${periodEndStr}:`, inRange)
+  return inRange
+  }).length
+  
+  console.log(`Period ${period.label}: ${sessionsInPeriod} sessions`)
+  return sessionsInPeriod
   })
   
   const maxSessionsInPeriod = Math.max(...sessionsPerPeriod, 1)
@@ -757,4 +758,4 @@ const getTimeAgo = (dateString, timeString) => {
   
   return formatDate(dateString)
 }
-</script> 
+</script>

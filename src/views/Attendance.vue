@@ -67,101 +67,109 @@
               <p class="text-gray-500 mb-6">
                 {{ searchQuery ? 'No records match your search criteria.' : (authStore.user?.role === 'admin' ? 'No attendance records in the system.' : 'Start by adding your first attendance record.') }}
               </p>
-                              <button
-                  v-if="authStore.user?.role !== 'admin'"
-                  @click="openSidebar"
-                  class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                  </svg>
-                  Add First Record
-                </button>
+              <button
+                v-if="authStore.user?.role !== 'admin'"
+                @click="openSidebar"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add First Record
+              </button>
             </div>
 
             <!-- Table with Data -->
             <div v-else class="border border-gray-200 rounded-lg">
               <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Student
-                    </th>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Session
-                    </th>
-                    <th scope="col" class="relative px-6 py-4">
-                      <span class="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                  <tr 
-                    v-for="record in sortedRecords" 
-                    :key="record.timestamp"
-                    :class="[
-                      'transition-all duration-300 cursor-pointer',
-                      newlyAddedRecords.has(record.timestamp) ? 'new-record-highlight' : 'hover:bg-gray-50'
-                    ]"
-                    @click="viewRecord(record)"
-                  >
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm font-medium text-gray-900">{{ record.student_name }}</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm text-gray-900">{{ formatDate(record.tutoring_date) }}</div>
-                      <div class="text-sm text-gray-500">{{ record.tutoring_time }}</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div class="relative dropdown-container">
-                        <button 
-                          @click.stop="toggleDropdown(record.record_id)"
-                          :data-record-id="record.record_id"
-                          class="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                        >
-                          <span class="sr-only">Open options</span>
-                          <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                          </svg>
-                        </button>
-                        
-                        <!-- Dropdown Menu -->
-                        <Transition name="fade">
-                          <Teleport to="body">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Student
+                      </th>
+                      <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Session
+                      </th>
+                      <th scope="col" class="relative px-6 py-4">
+                        <span class="sr-only">Actions</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-gray-200">
+                    <template v-for="record in sortedRecords" :key="record?.timestamp || Math.random()">
+                      <tr
+                        v-if="record && (record.nama_siswa || record.student_name)"
+                        :class="[
+                          'transition-all duration-300 cursor-pointer',
+                          newlyAddedRecords.has(record.timestamp) ? 'new-record-highlight' : 'hover:bg-gray-50'
+                        ]"
+                        @click="viewRecord(record)"
+                      >
+                        <td class="px-6 py-4 whitespace-nowrap">
+                          <div class="text-sm font-medium text-gray-900">{{ record.nama_siswa || record.student_name }}</div>
+                          
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                          <div class="text-sm text-gray-900">{{ (record.tanggal || record.tutoring_date) ? formatDate(record.tanggal || record.tutoring_date) : 'No date' }}</div>
+                          <div class="text-sm text-gray-500">{{ record.waktu || record.tutoring_time || 'No time' }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div class="relative dropdown-container">
+                            <button
+                              @click.stop="toggleDropdown(record.record_id)"
+                              :data-record-id="record.record_id"
+                              class="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            >
+                              <span class="sr-only">Open options</span>
+                              <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                              </svg>
+                            </button>
+                            
+                            <!-- Dropdown Menu -->
                             <div 
                               v-if="openDropdown === record.record_id"
-                              class="fixed bg-white rounded-lg shadow-xl ring-1 ring-black ring-opacity-10 border border-gray-200 z-50"
-                              :style="getDropdownPosition(record.record_id)"
+                              class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200"
                             >
-                            <div class="py-1">
-                              <button
-                                @click.stop="openEditSidebar(record); closeDropdown()"
-                                class="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                </svg>
-                                Edit Record
-                              </button>
-                              <button
-                                @click.stop="handleDelete(record); closeDropdown()"
-                                class="flex items-center w-full px-4 py-3 text-sm text-red-700 hover:bg-red-50 hover:text-red-800 transition-colors duration-150"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                </svg>
-                                Delete Record
-                              </button>
+                              <div class="py-1">
+                                <button
+                                  @click="viewRecord(record)"
+                                  class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                  View Details
+                                </button>
+                                <button
+                                  @click="openEditSidebar(record)"
+                                  class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                  Edit Record
+                                </button>
+                                <button
+                                  v-if="authStore.user?.role === 'admin'"
+                                  @click="handleDelete(record)"
+                                  class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                  Delete Record
+                                </button>
+                              </div>
                             </div>
-                                                      </div>
-                          </Teleport>
-                        </Transition>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                          </div>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -222,13 +230,14 @@
     />
 
     <!-- Record Details Modal -->
-    <div v-if="selectedRecord" class="fixed inset-0 bg-opacity-50 dark:bg-black dark:bg-opacity-60 overflow-y-auto h-full w-full z-50" @click="closeDetailModal">
-      <div class="relative top-0 md:top-20 mx-auto border max-w-lg shadow-lg rounded-lg bg-white flex flex-col h-full md:h-auto" @click.stop>
+    <div v-if="selectedRecord" class="fixed inset-0 bg-black/50 justify-centerbg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50" @click="closeDetailModal">
+      <div class="relative w-full max-w-2xl mx-auto bg-white rounded-lg shadow-lg overflow-y-auto h-5/6" @click.stop>
         <!-- Modal Header -->
         <div class="flex justify-between items-center p-4 sm:p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
           <h3 class="text-lg sm:text-lg font-semibold text-gray-900">Record Details</h3>
           <div class="flex items-center space-x-2">
             <button
+              v-if="authStore.user?.role === 'admin'"
               @click="handleDelete(selectedRecord)"
               class="text-red-400 hover:text-red-600 transition-colors p-2 rounded-full hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
               title="Delete Record"
@@ -248,71 +257,71 @@
         <!-- Modal Content -->
         <div class="p-4 sm:p-4 flex-1 overflow-y-auto">
           <div class="space-y-6">
-          <!-- Student -->
-          <div class="space-y-2">
-            <span class="text-sm font-medium text-gray-500">Student</span>
-            <p class="text-base text-gray-900">{{ selectedRecord.student_name || 'No student name provided' }}</p>
-          </div>
-          
-          <!-- Date and Time -->
-          <div class="space-y-2">
-            <span class="text-sm font-medium text-gray-500">Session Date and Time</span>
-            <p class="text-base text-gray-900">{{ selectedRecord.tutoring_date && selectedRecord.tutoring_time ? formatDateTime(selectedRecord.tutoring_date, selectedRecord.tutoring_time) : 'No date/time provided' }}</p>
-          </div>
+            <!-- Student -->
+            <div class="space-y-2">
+              <span class="text-sm font-medium text-gray-500">Student</span>
+              <p class="text-base text-gray-900">{{ selectedRecord.nama_siswa || selectedRecord.student_name || 'No student name provided' }}</p>
+            </div>
+            
+            <!-- Date and Time -->
+            <div class="space-y-2">
+              <span class="text-sm font-medium text-gray-500">Session Date and Time</span>
+              <p class="text-base text-gray-900">{{ (selectedRecord.tanggal || selectedRecord.tutoring_date) && (selectedRecord.waktu || selectedRecord.tutoring_time) ? formatDateTime(selectedRecord.tanggal || selectedRecord.tutoring_date, selectedRecord.waktu || selectedRecord.tutoring_time) : 'No date/time provided' }}</p>
+            </div>
 
-          <!-- Bukti Ajar -->
-          <div class="space-y-2">
-            <span class="text-sm font-medium text-gray-500">Proof of Session</span>
-            <div class="w-full">
-              <img 
-                v-if="selectedRecord.proof_of_teaching && selectedRecord.proof_of_teaching.trim() !== '' && selectedRecord.proof_of_teaching !== 'null' && !imageLoadError"
-                :src="selectedRecord.proof_of_teaching" 
-                :alt="`Bukti ajar for ${selectedRecord.student_name || 'student'}`"
-                class="w-full h-96 object-cover rounded-lg border border-gray-200 mt-2"
-                @error="handleImageError"
-                @load="handleImageLoad"
-                ref="proofImage"
-              />
-              <div v-else class="w-full h-96 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
-                <div class="text-center">
-                  <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                  <p class="mt-2 text-sm text-gray-500">No proof image provided</p>
+            <!-- Bukti Ajar -->
+            <div class="space-y-2">
+              <span class="text-sm font-medium text-gray-500">Proof of Session</span>
+              <div class="w-full">
+                <img
+                  v-if="(selectedRecord.proof_of_teaching || selectedRecord.attendance_proof) && (selectedRecord.proof_of_teaching || selectedRecord.attendance_proof).trim() !== '' && (selectedRecord.proof_of_teaching || selectedRecord.attendance_proof) !== 'null' && !imageLoadError"
+                  :src="selectedRecord.proof_of_teaching || selectedRecord.attendance_proof"
+                  :alt="`Bukti ajar for ${selectedRecord.nama_siswa || selectedRecord.student_name || 'student'}`"
+                  class="w-full h-96 object-cover rounded-lg border border-gray-200 mt-2"
+                  @error="handleImageError"
+                  @load="handleImageLoad"
+                  ref="proofImage"
+                />
+                <div v-else class="w-full h-96 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
+                  <div class="text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <p class="mt-2 text-sm text-gray-500">No proof image provided</p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Submitted Time -->
-          <div class="space-y-2">
-            <span class="text-sm font-medium text-gray-500">Submitted</span>
-            <p class="text-base text-gray-900">{{ selectedRecord.timestamp ? new Date(selectedRecord.timestamp).toLocaleString('id-ID', {
-              timeZone: 'Asia/Jakarta',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit'
-            }) : 'No submission time recorded' }}</p>
-          </div>
+            <!-- Submitted Time -->
+            <div class="space-y-2">
+              <span class="text-sm font-medium text-gray-500">Submitted</span>
+              <p class="text-base text-gray-900">{{ selectedRecord.timestamp ? new Date(selectedRecord.timestamp).toLocaleString('id-ID', {
+                timeZone: 'Asia/Jakarta',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+              }) : 'No submission time recorded' }}</p>
+            </div>
 
-          <!-- Admin Notice -->
-          <div v-if="authStore.user?.role !== 'admin'" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md">
-            <div class="flex">
-              <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-              </div>
-              <div class="ml-3">
-                <p class="text-sm text-yellow-700">
-                  Contact admin for record deletion
-                </p>
+            <!-- Admin Notice -->
+            <div v-if="authStore.user?.role !== 'admin'" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm text-yellow-700">
+                    Contact admin for record deletion
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
           </div>
         </div>
 
@@ -381,7 +390,7 @@ const currentPage = ref(1)
 const pageSize = ref(25)
 const pageSizeOptions = [25, 50, 100]
 
-// Add after pageSizeOptions:
+// Search and sort state
 const searchQuery = ref('')
 const sortBy = ref('date')
 const sortOrder = ref('desc')
@@ -465,179 +474,70 @@ watch(userRecords, (newRecords, oldRecords) => {
   }
 }, { deep: true })
 
-// Update displayRecords to filter by searchQuery:
+// Filter and sort records
 const displayRecords = computed(() => {
-  if (!searchQuery.value) return userRecords.value
-  const q = searchQuery.value.toLowerCase()
-  return userRecords.value.filter(r =>
-    (r.student_name && r.student_name.toLowerCase().includes(q)) ||
-    (r.tutoring_date && r.tutoring_date.toLowerCase().includes(q)) ||
-    (r.tutoring_time && r.tutoring_time.toLowerCase().includes(q))
-  )
-})
-
-// Server-side pagination info
-const paginationInfo = computed(() => {
-  const pag = pagination.value || {}
-  const start = pag.totalRecords ? ((pag.page - 1) * pag.limit) + 1 : 0
-  const end = Math.min(pag.page * pag.limit, pag.totalRecords)
-  return {
-    start,
-    end,
-    total: pag.totalRecords || 0,
-    currentPage: pag.page || 1,
-    totalPages: pag.totalPages || 0,
-    hasNextPage: pag.hasNextPage || false,
-    hasPrevPage: pag.hasPrevPage || false
+  const validRecords = userRecords.value.filter(r => {
+    return r &&
+           r !== null &&
+           r !== undefined &&
+           (r.nama_siswa || r.student_name) &&
+           (r.tanggal || r.tutoring_date)
+  })
+  
+  if (!searchQuery.value) {
+    return validRecords
   }
+  
+  const query = searchQuery.value.toLowerCase()
+  return validRecords.filter(record => {
+    return (
+      (record.nama_siswa || record.student_name)?.toLowerCase().includes(query) ||
+      (record.tanggal || record.tutoring_date)?.toLowerCase().includes(query) ||
+      (record.waktu || record.tutoring_time)?.toLowerCase().includes(query)
+    )
+  })
 })
 
-// Add after displayRecords computed:
 const sortedRecords = computed(() => {
-  let records = [...displayRecords.value]
+  const records = [...displayRecords.value]
   
-  if (sortBy.value === 'date') {
-    records.sort((a, b) => {
-      const dateA = new Date(`${a.tutoring_date} ${a.tutoring_time}`)
-      const dateB = new Date(`${b.tutoring_date} ${b.tutoring_time}`)
-      return sortOrder.value === 'asc' ? dateA - dateB : dateB - dateA
-    })
-  }
-  
-  return records
+  return records.sort((a, b) => {
+    let aValue, bValue
+    
+    switch (sortBy.value) {
+      case 'name':
+        aValue = a.nama_siswa || a.student_name || ''
+        bValue = b.nama_siswa || b.student_name || ''
+        break
+      case 'date':
+      default:
+        aValue = a.tanggal || a.tutoring_date || ''
+        bValue = b.tanggal || b.tutoring_date || ''
+        break
+    }
+    
+    if (sortOrder.value === 'desc') {
+      return bValue.localeCompare(aValue)
+    } else {
+      return aValue.localeCompare(bValue)
+    }
+  })
 })
 
-// Methods
-const goToPage = (page) => {
-  if (page >= 1 && page <= paginationInfo.value.totalPages) {
-    currentPage.value = page
-  }
-}
+// Pagination info
+const totalPages = computed(() => {
+  return Math.ceil(sortedRecords.value.length / pageSize.value)
+})
 
-// Watch for pagination changes to refetch data
-watch([currentPage, pageSize], () => {
-  refetch()
-}, { immediate: false })
-
-const formatDate = (date) => {
-  if (!date) return ''
+const paginationInfo = computed(() => {
+  const total = sortedRecords.value.length
+  const start = total > 0 ? (currentPage.value - 1) * pageSize.value + 1 : 0
+  const end = Math.min(currentPage.value * pageSize.value, total)
   
-  // Handle different date formats
-  let dateObj
-  if (typeof date === 'string') {
-    // If it's already in YYYY-MM-DD format, create Date object properly
-    if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      dateObj = new Date(date + 'T00:00:00')
-    } else {
-      dateObj = new Date(date)
-    }
-  } else {
-    dateObj = new Date(date)
-  }
-  
-  // Check if date is valid
-  if (isNaN(dateObj.getTime())) {
-    console.warn('Invalid date:', date)
-    return 'Invalid Date'
-  }
-  
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-  const dayName = dayNames[dateObj.getDay()]
-  const day = dateObj.getDate().toString().padStart(2, '0')
-  const month = (dateObj.getMonth() + 1).toString().padStart(2, '0')
-  const year = dateObj.getFullYear()
-  
-  return `${dayName}, ${day}/${month}/${year}`
-}
+  return { start, end, total }
+})
 
-const formatDateTime = (date, time) => {
-  if (!date || !time) return ''
-  
-  // Handle different date formats
-  let dateObj
-  if (typeof date === 'string') {
-    // If it's already in YYYY-MM-DD format, create Date object properly
-    if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      dateObj = new Date(date + 'T00:00:00')
-    } else {
-      dateObj = new Date(date)
-    }
-  } else {
-    dateObj = new Date(date)
-  }
-  
-  // Check if date is valid
-  if (isNaN(dateObj.getTime())) {
-    console.warn('Invalid date:', date)
-    return 'Invalid Date'
-  }
-  
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-  const dayName = dayNames[dateObj.getDay()]
-  const day = dateObj.getDate().toString().padStart(2, '0')
-  const month = (dateObj.getMonth() + 1).toString().padStart(2, '0')
-  const year = dateObj.getFullYear()
-  
-  return `${dayName}, ${day}/${month}/${year} ${time}`
-}
-
-const isImageUrl = (url) => {
-  if (!url) return false
-  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg']
-  const urlLower = url.toLowerCase()
-  return imageExtensions.some(ext => urlLower.includes(ext))
-}
-
-const viewRecord = (record) => {
-  selectedRecord.value = record
-}
-
-const closeDetailModal = () => {
-  selectedRecord.value = null
-  imageLoadError.value = false
-}
-
-const handleImageError = () => {
-  imageLoadError.value = true
-}
-
-const handleImageLoad = () => {
-  imageLoadError.value = false
-}
-
-const openEditSidebar = (record) => {
-  editRecord.value = { ...record }
-  isEditSidebarOpen.value = true
-}
-
-const closeEditSidebar = () => {
-  isEditSidebarOpen.value = false
-  editRecord.value = null
-}
-
-const handleDelete = async (record) => {
-  closeDetailModal()
-  confirmDialog.value = {
-    isOpen: true,
-    title: 'Delete Record',
-    message: `Are you sure you want to delete the record for ${record.student_name} on ${record.tutoring_date}?`,
-    confirmText: 'Delete',
-    cancelText: 'Cancel',
-    onConfirm: async () => {
-      try {
-        await deleteRecord(record.record_id)
-        toast.success('Record deleted successfully!')
-        closeConfirmDialog()
-      } catch (error) {
-        console.error('Error deleting record:', error)
-        toast.error('Failed to delete record. Please try again.')
-        closeConfirmDialog()
-      }
-    }
-  }
-}
-
-// Sidebar methods
+// Sidebar functions
 const openSidebar = () => {
   isSidebarOpen.value = true
 }
@@ -646,95 +546,142 @@ const closeSidebar = () => {
   isSidebarOpen.value = false
 }
 
-const handleSubmitted = async () => {
-  try {
-    // Invalidate the records query to trigger a refetch
-    await queryClient.invalidateQueries({ queryKey: ['records'] })
-    
-    // Show success message
-    toast.success('Attendance submitted successfully!')
-    
-    // New records will be automatically highlighted by the watcher
-  } catch (err) {
-    console.error('Error refreshing records:', err)
-    toast.error('Failed to refresh records. Please try again.')
-  }
-}
-
-// Confirmation dialog methods
-const closeConfirmDialog = () => {
-  confirmDialog.value.isOpen = false
-}
-
-// Dropdown methods
+// Dropdown functions
 const toggleDropdown = (recordId) => {
-  if (openDropdown.value === recordId) {
-    openDropdown.value = null
-  } else {
-    openDropdown.value = recordId
-  }
+  openDropdown.value = openDropdown.value === recordId ? null : recordId
 }
 
+// Close dropdown when clicking outside
 const closeDropdown = () => {
   openDropdown.value = null
 }
 
-const getDropdownPosition = (recordId) => {
-  const button = document.querySelector(`[data-record-id="${recordId}"]`)
-  if (!button) return {}
-  
-  const rect = button.getBoundingClientRect()
-  const dropdownWidth = 192 // w-48 = 12rem = 192px
-  const dropdownHeight = 80 // Approximate height
-  
-  // Check if dropdown would go off the right edge
-  let left = rect.right - dropdownWidth
-  if (left < 0) {
-    left = rect.left
-  }
-  
-  // Check if dropdown would go off the bottom edge
-  let top = rect.bottom + 8 // mt-2 = 8px
-  if (top + dropdownHeight > window.innerHeight) {
-    top = rect.top - dropdownHeight - 8
-  }
-  
-  return {
-    position: 'fixed',
-    left: `${left}px`,
-    top: `${top}px`,
-    width: `${dropdownWidth}px`
+// Modal functions
+const viewRecord = (record) => {
+  selectedRecord.value = record
+  closeDropdown()
+}
+
+const closeDetailModal = () => {
+  selectedRecord.value = null
+  imageLoadError.value = false
+}
+
+// Edit sidebar functions
+const openEditSidebar = (record) => {
+  editRecord.value = record
+  isEditSidebarOpen.value = true
+  closeDropdown()
+  closeDetailModal()
+}
+
+const closeEditSidebar = () => {
+  isEditSidebarOpen.value = false
+  editRecord.value = null
+}
+
+// Confirmation dialog functions
+const closeConfirmDialog = () => {
+  confirmDialog.value.isOpen = false
+}
+
+// Delete function
+const handleDelete = async (record) => {
+  confirmDialog.value = {
+    isOpen: true,
+    title: 'Delete Record',
+    message: `Are you sure you want to delete the attendance record for ${record.nama_siswa || record.student_name}?`,
+    confirmText: 'Delete',
+    cancelText: 'Cancel',
+    onConfirm: async () => {
+      try {
+        await deleteRecord.mutateAsync(record.record_id)
+        toast.success('Record deleted successfully')
+        closeDetailModal()
+        closeDropdown()
+      } catch (error) {
+        console.error('Delete error:', error)
+        toast.error('Failed to delete record')
+      } finally {
+        closeConfirmDialog()
+      }
+    }
   }
 }
 
-// Close dropdown when clicking outside
+// Pagination functions
+const changePage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+  }
+}
+
+// Handle form submission
+const handleSubmitted = () => {
+  closeSidebar()
+  closeEditSidebar()
+  refetch()
+}
+
+// Image error handling
+const handleImageError = () => {
+  imageLoadError.value = true
+}
+
+const handleImageLoad = () => {
+  imageLoadError.value = false
+}
+
+// Utility functions
+const formatDate = (dateString) => {
+  if (!dateString) return 'No date'
+  
+  try {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return 'Invalid date'
+    
+    return date.toLocaleDateString('id-ID', {
+      timeZone: 'Asia/Jakarta',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  } catch (error) {
+    return 'Invalid date'
+  }
+}
+
+const formatDateTime = (dateString, timeString) => {
+  if (!dateString || !timeString) return 'No date/time'
+  
+  try {
+    const dateTimeString = `${dateString}T${timeString}`
+    const date = new Date(dateTimeString)
+    
+    if (isNaN(date.getTime())) return 'Invalid date/time'
+    
+    return date.toLocaleString('id-ID', {
+      timeZone: 'Asia/Jakarta',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch (error) {
+    return 'Invalid date/time'
+  }
+}
+
+// Click outside handler
 const handleClickOutside = (event) => {
-  // Don't close if clicking on the dropdown button or menu items
   if (!event.target.closest('.dropdown-container')) {
     closeDropdown()
   }
 }
 
 // Lifecycle hooks
-onMounted(async () => {
-  console.log('Attendance component mounted')
-  console.log('Auth store user:', authStore.user)
-  console.log('Is authenticated:', authStore.isAuthenticated)
-  console.log('Token in localStorage:', localStorage.getItem('authToken'))
-  
-  // Try to fetch user data if not already loaded
-  if (!authStore.user && authStore.isAuthenticated) {
-    console.log('Fetching user data...')
-    await authStore.fetchUser()
-  }
-  
-  // If still no user, try to fetch again
-  if (!authStore.user && localStorage.getItem('authToken')) {
-    console.log('Token exists but no user, trying to fetch user again...')
-    await authStore.fetchUser()
-  }
-  
-  // Add click outside listener
+onMounted(() => {
   document.addEventListener('click', handleClickOutside)
 })
 
@@ -742,33 +689,6 @@ onMounted(async () => {
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })
-
-const saveEdit = async () => {
-  if (!editRecord.value) return
-      try {
-      await apiClient.patch(`/attendance/${editRecord.value.record_id}`, {
-        student_name: editRecord.value.student_name,
-        tutoring_date: editRecord.value.tutoring_date,
-        tutoring_time: editRecord.value.tutoring_time,
-        proof_of_teaching: editRecord.value.proof_of_teaching
-      })
-    toast.success('Record updated!')
-    closeEditSidebar()
-    refetch()
-  } catch (err) {
-    toast.error('Failed to update record')
-  }
-}
-
-// Add after formatDateTime function:
-const toggleSort = (column) => {
-  if (sortBy.value === column) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortBy.value = column
-    sortOrder.value = 'desc'
-  }
-}
 </script>
 
 <style scoped>
