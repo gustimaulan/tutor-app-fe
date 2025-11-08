@@ -16,17 +16,12 @@
           </div>
         </div>
 
-        <!-- Loading State -->
-        <div v-if="isLoading" class="flex justify-center items-center py-8">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-
         <!-- Content -->
-        <template v-else>
+        <div>
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
             <div class="flex-1">
               <h3 class="text-lg font-medium leading-6 text-gray-900">
-                {{ authStore.user?.role === 'admin' ? 'All Attendance Records' : 'Your Attendance Records' }}
+                {{ authStore.isAdmin ? 'All Attendance Records' : 'Your Attendance Records' }}
               </h3>
             </div>
             <div class="flex items-center space-x-4">
@@ -41,8 +36,8 @@
               </div>
               <!-- Entries per page -->
             <div class="flex items-center space-x-2">
-              <select 
-                v-model="pageSize" 
+              <select
+                v-model="pageSize"
                   class="flex-1 sm:flex-none rounded-lg border border-gray-300 bg-white p-1 md:p-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 text-sm transition-all"
               >
                   <option v-for="size in pageSizeOptions" :key="size" :value="size">
@@ -51,13 +46,37 @@
               </select>
               <span class="text-sm text-gray-600">entries</span>
               </div>
+              
+              <!-- Add Button -->
+              <button
+                @click="openSidebar"
+                class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 active:scale-95"
+                title="Add New Record"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+
+              <!-- Edit Button -->
+              <button
+                v-if="editRecord"
+                @click="openEditSidebar(editRecord)"
+                class="w-10 h-10 sm:w-12 sm:h-12 bg-orange-600 hover:bg-orange-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 active:scale-95"
+                title="Edit Selected Record"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
             </div>
           </div>
           
           <!-- Table View -->
-          <div class="block">
+          <div class="block w-full">
+            
             <!-- Empty State -->
-            <div v-if="sortedRecords.length === 0" class="text-center py-12">
+            <div v-if="!isLoading && (!userRecords || userRecords.length === 0) && sortedRecords.length === 0" class="text-center py-12">
               <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-gray-100 mb-4">
                 <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -65,10 +84,10 @@
               </div>
               <h3 class="text-lg font-medium text-gray-900 mb-2">No attendance records found</h3>
               <p class="text-gray-500 mb-6">
-                {{ searchQuery ? 'No records match your search criteria.' : (authStore.user?.role === 'admin' ? 'No attendance records in the system.' : 'Start by adding your first attendance record.') }}
+                {{ searchQuery ? 'No records match your search criteria.' : (authStore.isAdmin ? 'No attendance records in the system.' : 'Start by adding your first attendance record.') }}
               </p>
               <button
-                v-if="authStore.user?.role !== 'admin'"
+                v-if="!authStore.isAdmin"
                 @click="openSidebar"
                 class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
@@ -80,13 +99,16 @@
             </div>
 
             <!-- Table with Data -->
-            <div v-else class="border border-gray-200 rounded-lg">
+            <div v-if="sortedRecords.length > 0 || isLoading" class="border border-gray-200 rounded-lg">
               <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                   <thead class="bg-gray-50">
                     <tr>
                       <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Student
+                      </th>
+                      <th v-if="authStore.isAdmin" scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Tutor
                       </th>
                       <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Session
@@ -97,22 +119,57 @@
                     </tr>
                   </thead>
                   <tbody class="bg-white divide-y divide-gray-200">
-                    <template v-for="record in sortedRecords" :key="record?.timestamp || Math.random()">
-                      <tr
-                        v-if="record && (record.nama_siswa || record.student_name)"
-                        :class="[
-                          'transition-all duration-300 cursor-pointer',
-                          newlyAddedRecords.has(record.timestamp) ? 'new-record-highlight' : 'hover:bg-gray-50'
-                        ]"
-                        @click="viewRecord(record)"
-                      >
+                    <!-- Loading rows - Only show when no data exists yet -->
+                    <template v-if="isLoading && (!userRecords || userRecords.length === 0)">
+                      <tr v-for="i in 3" :key="`loading-${i}`">
                         <td class="px-6 py-4 whitespace-nowrap">
-                          <div class="text-sm font-medium text-gray-900">{{ record.nama_siswa || record.student_name }}</div>
-                          
+                          <div class="animate-pulse">
+                            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                          </div>
+                        </td>
+                        <td v-if="authStore.isAdmin" class="px-6 py-4 whitespace-nowrap">
+                          <div class="animate-pulse">
+                            <div class="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                            <div class="h-3 bg-gray-200 rounded w-2/3"></div>
+                          </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                          <div class="text-sm text-gray-900">{{ (record.tanggal || record.tutoring_date) ? formatDate(record.tanggal || record.tutoring_date) : 'No date' }}</div>
-                          <div class="text-sm text-gray-500">{{ record.waktu || record.tutoring_time || 'No time' }}</div>
+                          <div class="animate-pulse">
+                            <div class="h-4 bg-gray-200 rounded w-1/2 mb-1"></div>
+                            <div class="h-3 bg-gray-200 rounded w-1/3"></div>
+                          </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div class="animate-pulse">
+                            <div class="h-8 w-8 bg-gray-200 rounded-full mx-auto"></div>
+                          </div>
+                        </td>
+                      </tr>
+                    </template>
+                    
+                    <!-- Actual data rows -->
+                    <template v-else>
+                      <template v-for="record in sortedRecords" :key="record?.timestamp || Math.random()">
+                        
+                        <tr
+                          v-if="record && record.student_name"
+                          :class="[
+                            'transition-all duration-300 cursor-pointer',
+                            newlyAddedRecords.has(record.timestamp) ? 'new-record-highlight' : 'hover:bg-gray-50'
+                          ]"
+                          @click="viewRecord(record)"
+                        >
+                        <td class="px-6 py-4 whitespace-nowrap">
+                          <div class="text-sm font-medium text-gray-900">{{ record.student_name }}</div>
+                          
+                        </td>
+                        <td v-if="authStore.isAdmin" class="px-6 py-4 whitespace-nowrap">
+                          <div class="text-sm font-medium text-gray-900">{{ record.tutor_name || 'Unknown' }}</div>
+                          <div class="text-sm text-gray-500">{{ record.tutor_email || 'No email' }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                          <div class="text-sm text-gray-900">{{ record.tutoring_date ? formatDate(record.tutoring_date) : 'No date' }}</div>
+                          <div class="text-sm text-gray-500">{{ record.tutoring_time || 'No time' }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div class="relative dropdown-container">
@@ -128,9 +185,9 @@
                             </button>
                             
                             <!-- Dropdown Menu -->
-                            <div 
+                            <div
                               v-if="openDropdown === record.record_id"
-                              class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200"
+                              class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-[60] border border-gray-200"
                             >
                               <div class="py-1">
                                 <button
@@ -153,7 +210,7 @@
                                   Edit Record
                                 </button>
                                 <button
-                                  v-if="authStore.user?.role === 'admin'"
+                                  v-if="authStore.isAdmin"
                                   @click="handleDelete(record)"
                                   class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                                 >
@@ -166,7 +223,8 @@
                             </div>
                           </div>
                         </td>
-                      </tr>
+                        </tr>
+                      </template>
                     </template>
                   </tbody>
                 </table>
@@ -175,7 +233,7 @@
           </div>
 
           <!-- Pagination -->
-          <div v-if="sortedRecords.length > 0 && paginationInfo.total > 0" class="flex flex-col sm:flex-row items-center justify-between mt-4 space-y-4 sm:space-y-0">
+          <div v-if="pagination && pagination.totalRecords > 0" class="flex flex-col sm:flex-row items-center justify-between mt-4 space-y-4 sm:space-y-0">
             <div class="text-sm text-gray-700">
               Showing {{ paginationInfo.start }} to {{ paginationInfo.end }} of {{ paginationInfo.total }} entries
             </div>
@@ -189,55 +247,53 @@
               </button>
               <button 
                 @click="changePage(currentPage + 1)"
-                :disabled="currentPage === totalPages"
+                :disabled="!pagination.hasNextPage"
                 class="px-3 py-1 rounded-md border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>
             </div>
           </div>
-        </template>
+        </div>
       </div>
     </div>
 
-    <!-- Floating Add Button -->
-    <button
-      v-if="authStore.user?.role !== 'admin'"
-      @click="openSidebar"
-      class="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 w-14 h-14 sm:w-16 sm:h-16 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 active:scale-95"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-      </svg>
-    </button>
+    <!-- Edit Sidebar -->
+    <EditAttendanceSidebar
+      :is-open="isEditSidebarOpen"
+      :record="editRecord"
+      @close="closeEditSidebar"
+      @submitted="handleSubmitted"
+    />
 
-    <!-- Floating Edit Button -->
-    <button
-      v-if="editRecord"
-      @click="openEditSidebar(editRecord)"
-      class="fixed bottom-32 right-4 sm:bottom-20 sm:right-6 w-14 h-14 sm:w-16 sm:h-16 bg-orange-600 hover:bg-orange-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 active:scale-95"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-      </svg>
-    </button>
+    <!-- Confirmation Dialog -->
+    <ConfirmDialog
+      :is-open="confirmDialog.isOpen"
+      :title="confirmDialog.title"
+      :message="confirmDialog.message"
+      :confirm-text="confirmDialog.confirmText"
+      :cancel-text="confirmDialog.cancelText"
+      @confirm="confirmDialog.onConfirm"
+      @cancel="closeConfirmDialog"
+    />
+
 
     <!-- Attendance Form Sidebar -->
-    <AttendanceFormSidebar
+    <AddAttendanceSidebar
       :is-open="isSidebarOpen"
       @close="closeSidebar"
       @submitted="handleSubmitted"
     />
 
     <!-- Record Details Modal -->
-    <div v-if="selectedRecord" class="fixed inset-0 bg-black/50 justify-centerbg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50" @click="closeDetailModal">
-      <div class="relative w-full max-w-2xl mx-auto bg-white rounded-lg shadow-lg overflow-y-auto h-5/6" @click.stop>
+    <div v-if="selectedRecord" class="fixed inset-0 bg-black/50 justify-centerbg-opacity-50 overflow-y-auto h-full w-full flex items-start justify-center z-50 pt-10 sm:pt-0 sm:items-center" @click="closeDetailModal">
+      <div class="relative w-full max-w-2xl mx-auto bg-white rounded-lg shadow-lg flex flex-col max-h-[90vh] sm:max-h-[80vh]" @click.stop>
         <!-- Modal Header -->
-        <div class="flex justify-between items-center p-4 sm:p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
+        <div class="flex justify-between items-center p-4 sm:p-4 border-b border-gray-200 bg-white">
           <h3 class="text-lg sm:text-lg font-semibold text-gray-900">Record Details</h3>
           <div class="flex items-center space-x-2">
             <button
-              v-if="authStore.user?.role === 'admin'"
+              v-if="authStore.isAdmin"
               @click="handleDelete(selectedRecord)"
               class="text-red-400 hover:text-red-600 transition-colors p-2 rounded-full hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
               title="Delete Record"
@@ -260,13 +316,20 @@
             <!-- Student -->
             <div class="space-y-2">
               <span class="text-sm font-medium text-gray-500">Student</span>
-              <p class="text-base text-gray-900">{{ selectedRecord.nama_siswa || selectedRecord.student_name || 'No student name provided' }}</p>
+              <p class="text-base text-gray-900">{{ selectedRecord.student_name || 'No student name provided' }}</p>
+            </div>
+            
+            <!-- Tutor (only visible to admin) -->
+            <div v-if="authStore.isAdmin" class="space-y-2">
+              <span class="text-sm font-medium text-gray-500">Tutor</span>
+              <p class="text-base text-gray-900">{{ selectedRecord.tutor_name || 'Unknown tutor' }}</p>
+              <p class="text-sm text-gray-500">{{ selectedRecord.tutor_email || 'No email provided' }}</p>
             </div>
             
             <!-- Date and Time -->
             <div class="space-y-2">
               <span class="text-sm font-medium text-gray-500">Session Date and Time</span>
-              <p class="text-base text-gray-900">{{ (selectedRecord.tanggal || selectedRecord.tutoring_date) && (selectedRecord.waktu || selectedRecord.tutoring_time) ? formatDateTime(selectedRecord.tanggal || selectedRecord.tutoring_date, selectedRecord.waktu || selectedRecord.tutoring_time) : 'No date/time provided' }}</p>
+              <p class="text-base text-gray-900">{{ selectedRecord.tutoring_date && selectedRecord.tutoring_time ? formatDateTime(selectedRecord.tutoring_date, selectedRecord.tutoring_time) : 'No date/time provided' }}</p>
             </div>
 
             <!-- Bukti Ajar -->
@@ -274,9 +337,9 @@
               <span class="text-sm font-medium text-gray-500">Proof of Session</span>
               <div class="w-full">
                 <img
-                  v-if="(selectedRecord.proof_of_teaching || selectedRecord.attendance_proof) && (selectedRecord.proof_of_teaching || selectedRecord.attendance_proof).trim() !== '' && (selectedRecord.proof_of_teaching || selectedRecord.attendance_proof) !== 'null' && !imageLoadError"
-                  :src="selectedRecord.proof_of_teaching || selectedRecord.attendance_proof"
-                  :alt="`Bukti ajar for ${selectedRecord.nama_siswa || selectedRecord.student_name || 'student'}`"
+                  v-if="selectedRecord.attendance_proof && selectedRecord.attendance_proof.trim() !== '' && selectedRecord.attendance_proof !== 'null' && !imageLoadError"
+                  :src="selectedRecord.attendance_proof"
+                  :alt="`Proof of session for ${selectedRecord.student_name || 'student'}`"
                   class="w-full h-96 object-cover rounded-lg border border-gray-200 mt-2"
                   @error="handleImageError"
                   @load="handleImageLoad"
@@ -308,7 +371,7 @@
             </div>
 
             <!-- Admin Notice -->
-            <div v-if="authStore.user?.role !== 'admin'" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md">
+            <div v-if="!authStore.isAdmin" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md">
               <div class="flex">
                 <div class="flex-shrink-0">
                   <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
@@ -325,8 +388,8 @@
           </div>
         </div>
 
-        <!-- Sticky Footer with Close/Edit Buttons -->
-        <div class="border-t border-gray-200 bg-white p-4 sm:p-4 sticky bottom-0">
+        <!-- Footer with Close/Edit Buttons -->
+        <div class="border-t border-gray-200 bg-white p-4 sm:p-4 mt-auto">
           <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
             <button
               type="button"
@@ -348,25 +411,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Edit Sidebar -->
-    <EditAttendanceSidebar
-      :is-open="isEditSidebarOpen"
-      :record="editRecord"
-      @close="closeEditSidebar"
-      @submitted="handleSubmitted"
-    />
-
-    <!-- Confirmation Dialog -->
-    <ConfirmDialog
-      :is-open="confirmDialog.isOpen"
-      :title="confirmDialog.title"
-      :message="confirmDialog.message"
-      :confirm-text="confirmDialog.confirmText"
-      :cancel-text="confirmDialog.cancelText"
-      @confirm="confirmDialog.onConfirm"
-      @cancel="closeConfirmDialog"
-    />
   </div>
 </template>
 
@@ -376,7 +420,7 @@ import { useAuthStore } from '../stores/auth'
 import { useAttendance } from '../composables/attendance'
 import { useToast } from '../composables/toast'
 import { useQueryClient } from '@tanstack/vue-query'
-import AttendanceFormSidebar from '../components/AttendanceFormSidebar.vue'
+import AddAttendanceSidebar from '../components/AddAttendanceSidebar.vue'
 import EditAttendanceSidebar from '../components/EditAttendanceSidebar.vue'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import apiClient from '../utils/axios'
@@ -398,16 +442,15 @@ const sortOrder = ref('desc')
 // Get attendance composable with pagination
 const { 
   userRecords, 
-  deleteRecord, 
+  deleteRecord: deleteRecordMutation, 
   isLoading, 
   isDeleting,
   students,
   tutors,
-  isError,
-  submitAttendance,
   pagination,
   refetch
 } = useAttendance({ page: currentPage, limit: pageSize })
+const deleteRecord = deleteRecordMutation
 
 // Sidebar state
 const isSidebarOpen = ref(false)
@@ -442,13 +485,6 @@ const editRecord = ref(null)
 // Image loading state
 const imageLoadError = ref(false)
 
-// Watch for errors
-watch(isError, (newValue) => {
-  if (newValue) {
-    error.value = 'Failed to load data. Please try again.'
-  }
-})
-
 // Watch for new records to highlight them
 watch(userRecords, (newRecords, oldRecords) => {
   // Skip highlighting on initial load
@@ -480,8 +516,8 @@ const displayRecords = computed(() => {
     return r &&
            r !== null &&
            r !== undefined &&
-           (r.nama_siswa || r.student_name) &&
-           (r.tanggal || r.tutoring_date)
+           (r.student_name || r.student_id) && // Check for either student_name or student_id
+           r.tutoring_date
   })
   
   if (!searchQuery.value) {
@@ -490,11 +526,21 @@ const displayRecords = computed(() => {
   
   const query = searchQuery.value.toLowerCase()
   return validRecords.filter(record => {
-    return (
-      (record.nama_siswa || record.student_name)?.toLowerCase().includes(query) ||
-      (record.tanggal || record.tutoring_date)?.toLowerCase().includes(query) ||
-      (record.waktu || record.tutoring_time)?.toLowerCase().includes(query)
-    )
+    const searchFields = [
+      record.student_name?.toLowerCase(),
+      record.tutoring_date?.toLowerCase(),
+      record.tutoring_time?.toLowerCase()
+    ]
+    
+    // Add tutor fields to search if user is admin
+    if (authStore.isAdmin) {
+      searchFields.push(
+        record.tutor_name?.toLowerCase(),
+        record.tutor_email?.toLowerCase()
+      )
+    }
+    
+    return searchFields.some(field => field?.includes(query))
   })
 })
 
@@ -506,13 +552,13 @@ const sortedRecords = computed(() => {
     
     switch (sortBy.value) {
       case 'name':
-        aValue = a.nama_siswa || a.student_name || ''
-        bValue = b.nama_siswa || b.student_name || ''
+        aValue = a.student_name || ''
+        bValue = b.student_name || ''
         break
       case 'date':
       default:
-        aValue = a.tanggal || a.tutoring_date || ''
-        bValue = b.tanggal || b.tutoring_date || ''
+        aValue = a.tutoring_date || ''
+        bValue = b.tutoring_date || ''
         break
     }
     
@@ -526,11 +572,11 @@ const sortedRecords = computed(() => {
 
 // Pagination info
 const totalPages = computed(() => {
-  return Math.ceil(sortedRecords.value.length / pageSize.value)
+  return pagination.value?.totalPages || 1
 })
 
 const paginationInfo = computed(() => {
-  const total = sortedRecords.value.length
+  const total = pagination.value?.totalRecords || 0
   const start = total > 0 ? (currentPage.value - 1) * pageSize.value + 1 : 0
   const end = Math.min(currentPage.value * pageSize.value, total)
   
@@ -590,12 +636,12 @@ const handleDelete = async (record) => {
   confirmDialog.value = {
     isOpen: true,
     title: 'Delete Record',
-    message: `Are you sure you want to delete the attendance record for ${record.nama_siswa || record.student_name}?`,
+    message: `Are you sure you want to delete the attendance record for ${record.student_name || 'Unknown Student'}?`,
     confirmText: 'Delete',
     cancelText: 'Cancel',
     onConfirm: async () => {
       try {
-        await deleteRecord.mutateAsync(record.record_id)
+        await deleteRecord.mutateAsync(record.record_id || record.id)
         toast.success('Record deleted successfully')
         closeDetailModal()
         closeDropdown()
@@ -611,7 +657,7 @@ const handleDelete = async (record) => {
 
 // Pagination functions
 const changePage = (page) => {
-  if (page >= 1 && page <= totalPages.value) {
+  if (page >= 1 && page <= (pagination.value?.totalPages || 1)) {
     currentPage.value = page
   }
 }

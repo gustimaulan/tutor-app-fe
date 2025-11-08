@@ -112,6 +112,25 @@ onMounted(() => {
               >
                 Attendance Records
               </router-link>
+              <!-- Admin only navigation -->
+              <template v-if="authStore.isAdmin">
+                <router-link
+                  to="/students"
+                  class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-all duration-200"
+                  active-class="border-blue-500 text-gray-900"
+                  exact-active-class="border-blue-500 text-gray-900"
+                >
+                  Students
+                </router-link>
+                <router-link
+                  to="/tutors"
+                  class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-all duration-200"
+                  active-class="border-blue-500 text-gray-900"
+                  exact-active-class="border-blue-500 text-gray-900"
+                >
+                  Tutors
+                </router-link>
+              </template>
             </div>
           </div>
           
@@ -224,6 +243,33 @@ onMounted(() => {
           </svg>
           <span class="text-xs mt-1" :class="{ 'font-semibold': route.path === '/attendance', 'font-normal': route.path !== '/attendance' }">Records</span>
         </router-link>
+        <!-- Admin only mobile navigation -->
+        <template v-if="authStore.isAdmin">
+          <router-link
+            to="/students"
+            class="flex flex-col items-center justify-center flex-1 h-full transition-all duration-200 active:scale-95"
+            :class="[
+              route.path === '/students' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'
+            ]"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <span class="text-xs mt-1" :class="{ 'font-semibold': route.path === '/students', 'font-normal': route.path !== '/students' }">Students</span>
+          </router-link>
+          <router-link
+            to="/tutors"
+            class="flex flex-col items-center justify-center flex-1 h-full transition-all duration-200 active:scale-95"
+            :class="[
+              route.path === '/tutors' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-900'
+            ]"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span class="text-xs mt-1" :class="{ 'font-semibold': route.path === '/tutors', 'font-normal': route.path !== '/tutors' }">Tutors</span>
+          </router-link>
+        </template>
       </div>
     </div>
   </div>

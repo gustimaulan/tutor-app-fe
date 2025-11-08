@@ -5,11 +5,6 @@ const props = defineProps({
   isOpen: {
     type: Boolean,
     required: true
-  },
-  record: {
-    type: Object,
-    required: false,
-    default: null
   }
 })
 
@@ -27,8 +22,7 @@ const handleClose = () => {
 <template>
   <Form
     :is-open="isOpen"
-    mode="edit"
-    :record="record"
+    mode="add"
     @close="handleClose"
     @submitted="handleSubmit"
   />

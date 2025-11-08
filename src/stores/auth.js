@@ -1,67 +1,93 @@
 import { defineStore } from 'pinia'
-import apiClient from '../utils/axios'
+import { loginAction, logoutAction, getCurrentUserAction } from '../actions/authActions.js'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
-    isAuthenticated: false,
-    loading: false,
+    token: localStorage.getItem('authToken') || null,
+    isLoading: false,
     error: null
   }),
 
   getters: {
+    isAuthenticated: (state) => !!state.token,
+    userRole: (state) => state.user?.role || null,
+    userRoles: (state) => state.user?.roles || [],
+    isAdmin: (state) => state.user?.role === 'admin' || state.user?.roles?.includes('admin') || false,
     userName: (state) => state.user?.name,
     userEmail: (state) => state.user?.email
   },
 
   actions: {
-    async login(email) { // Remove password parameter
-      this.loading = true
+    async login(credentials) {
+      this.isLoading = true
       this.error = null
-      try {
-        const response = await apiClient.post('/auth/login', { email }) // Only send email
+      
+      const result = await loginAction(credentials)
+      
+      if (result.success) {
+        // Store JWT token from response
+        if (result.data.token) {
+          this.token = result.data.token
+          localStorage.setItem('authToken', result.data.token)
+        }
         
-        const user = response.data
-        this.user = user
-        this.isAuthenticated = true
+        // Store user data from login response if available
+        if (result.data.user) {
+          this.user = result.data.user
+          console.log('Auth store - user data set from login:', this.user) // Debug log
+        } else {
+          // Get user data from /auth/check endpoint
+          const userResult = await getCurrentUserAction()
+          if (userResult.success) {
+            this.user = userResult.data.data || userResult.data
+            console.log('Auth store - user data set from auth check:', this.user) // Debug log
+          }
+        }
         
-        return true
-      } catch (error) {
-        this.error = error.response?.data?.error || 'Login failed'
-        throw error
-      } finally {
-        this.loading = false
+        this.isLoading = false
+        return result
+      } else {
+        this.error = result.error
+        this.isLoading = false
+        return result
       }
     },
 
     async logout() {
-      try {
-        await apiClient.post('/auth/logout')
-      } catch (error) {
-        console.error('Logout error:', error)
-      } finally {
-        this.clearAuth()
+      const result = await logoutAction()
+      
+      if (result.success) {
+        this.user = null
+        this.token = null
+        this.error = null
+      }
+      
+      return result
+    },
+
+    async getCurrentUser() {
+      if (!this.token) {
+        return null
+      }
+      
+      const result = await getCurrentUserAction()
+      
+      if (result.success) {
+        this.user = result.data.data || result.data
+        console.log('Auth store - user data set:', this.user) // Debug log
+        return result.data.data || result.data
+      } else {
+        this.error = result.error
+        // Clear invalid token
+        this.token = null
+        localStorage.removeItem('authToken')
+        return null
       }
     },
 
-    async fetchUser() {
-      this.loading = true
-      try {
-        const response = await apiClient.get('/auth/check')
-        this.user = response.data
-        this.isAuthenticated = true
-        return true
-      } catch (error) {
-        this.clearAuth()
-        return false
-      } finally {
-        this.loading = false
-      }
-    },
-
-    clearAuth() {
-      this.user = null
-      this.isAuthenticated = false
+    clearError() {
+      this.error = null
     }
   }
 })

@@ -1,69 +1,61 @@
 import { defineStore } from 'pinia'
-import axios from 'axios'
+import apiClient from '@/utils/axios'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
-
-// Configure axios defaults
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
-
-// Add request interceptor to include JWT token
-axios.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
-  }
-)
-
-// Add response interceptor to handle auth errors
-axios.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('authToken')
-      window.location.href = '/login'
-    }
-    return Promise.reject(error)
-  }
-)
 
 // API functions
 const fetchTutors = async () => {
-  const response = await axios.get(`${API_URL}/tutors`)
-  return response.data
+  const response = await apiClient.get(`/users/tutor`)
+  return response.data.data || response.data
 }
 
 const fetchStudents = async () => {
-  const response = await axios.get(`${API_URL}/students`)
-  return response.data
+  const response = await apiClient.get(`/students`)
+  return response.data.data || response.data
 }
 
-const fetchRecords = async ({ page = 1, limit = 25 } = {}) => {
-  const response = await axios.get(`${API_URL}/attendance`, {
-    params: { page, limit }
-  })
-  return response.data.records || response.data
+const fetchRecords = async ({ page = 1, limit = 25, email = null } = {}) => {
+  const params = { page, limit }
+  if (email) params.email = email
+  const response = await apiClient.get(`/attendance`, { params })
+  return response.data.data || response.data
 }
 
 const submitAttendance = async (data) => {
-  const response = await axios.post(`${API_URL}/attendance`, {
-    nama_tutor: data.nama_tutor,
-    nama_siswa: data.nama_siswa,
-    tanggal: data.tanggal,
-    waktu: data.waktu,
-    bukti_ajar: data.bukti_ajar,
-    email: data.email
+  const response = await apiClient.post(`/attendance`, {
+    student_name: data.student_name,
+    tutoring_date: data.tutoring_date,
+    tutoring_time: data.tutoring_time,
+    topic: data.topic || 'General',
+    duration: data.duration || '1 Jam',
+    status: data.status || 'Hadir',
+    notes: data.notes || '',
+    attendance_proof: data.attendance_proof || null
+  })
+  return response.data
+}
+
+const updateRecord = async (recordId, data) => {
+  const response = await apiClient.patch(`/attendance/${recordId}`, {
+    student_name: data.student_name,
+    tutoring_date: data.tutoring_date,
+    tutoring_time: data.tutoring_time,
+    topic: data.topic,
+    duration: data.duration,
+    status: data.status,
+    notes: data.notes || '',
+    attendance_proof: data.attendance_proof || null
   })
   return response.data
 }
 
 const deleteRecord = async (recordId) => {
-  const response = await axios.delete(`${API_URL}/attendance/${recordId}`)
+  const response = await apiClient.delete(`/attendance/${recordId}`)
   return response.data
+}
+
+const getUserProfile = async () => {
+  const response = await apiClient.get(`/profile`)
+  return response.data.data || response.data
 }
 
 export const useAttendanceStore = defineStore('attendance', {
@@ -71,66 +63,21 @@ export const useAttendanceStore = defineStore('attendance', {
     tutors: [],
     students: [],
     records: [],
+    pagination: null,
     loading: false,
     error: null,
     currentUser: null
   }),
 
   actions: {
-    async login(email, password) {
-      this.loading = true
-      try {
-        const response = await axios.post(`${API_URL}/auth/login`, { email, password })
-        this.currentUser = response.data.user
-        localStorage.setItem('authToken', response.data.token)
-        return response.data
-      } catch (error) {
-        this.error = error.response?.data?.error || error.message
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
-
-    async logout() {
-      this.loading = true
-      try {
-        await axios.post(`${API_URL}/auth/logout`)
-        this.currentUser = null
-        localStorage.removeItem('authToken')
-      } catch (error) {
-        this.error = error.response?.data?.error || error.message
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
-
-    async checkAuth() {
-      try {
-        const token = localStorage.getItem('authToken')
-        if (!token) {
-          this.currentUser = null
-          return null
-        }
-        const response = await axios.get(`${API_URL}/auth/check`)
-        this.currentUser = response.data.user
-        return response.data.user
-      } catch (error) {
-        this.currentUser = null
-        localStorage.removeItem('authToken')
-        return null
-      }
-    },
-
     async fetchTutors() {
       this.loading = true
       try {
-        const response = await axios.get(`${API_URL}/tutors`)
-        this.tutors = response.data
+        const response = await apiClient.get(`/users/tutor`)
+        this.tutors = response.data.data || response.data
       } catch (error) {
         console.error('Error fetching tutors:', error)
-        this.error = error.message
+        this.error = error.response?.data?.error || error.message
       } finally {
         this.loading = false
       }
@@ -139,24 +86,25 @@ export const useAttendanceStore = defineStore('attendance', {
     async fetchStudents() {
       this.loading = true
       try {
-        const response = await axios.get(`${API_URL}/students`)
-        this.students = response.data
+        const response = await apiClient.get(`/students`)
+        this.students = response.data.data || response.data
       } catch (error) {
         console.error('Error fetching students:', error)
-        this.error = error.message
+        this.error = error.response?.data?.error || error.message
       } finally {
         this.loading = false
       }
     },
 
-    async fetchRecords() {
+    async fetchRecords(params = {}) {
       this.loading = true
       try {
-        const response = await axios.get(`${API_URL}/attendance`)
-        this.records = response.data
+        const response = await apiClient.get(`/attendance`, { params })
+        this.records = response.data.data || response.data
+        this.pagination = response.data.pagination || null
       } catch (error) {
         console.error('Error fetching records:', error)
-        this.error = error.message
+        this.error = error.response?.data?.error || error.message
       } finally {
         this.loading = false
       }
@@ -166,23 +114,21 @@ export const useAttendanceStore = defineStore('attendance', {
       this.loading = true
       try {
         console.log('Submitting attendance data:', data)
-        const response = await axios.post(`${API_URL}/attendance`, {
-          tutor_name: data.tutor_name,
+        const response = await apiClient.post(`/attendance`, {
           student_name: data.student_name,
           tutoring_date: data.tutoring_date,
           tutoring_time: data.tutoring_time,
-          attendance_proof: data.attendance_proof,
-          email: data.email
+          topic: data.topic || 'General',
+          duration: data.duration || '1 Jam',
+          status: data.status || 'Hadir',
+          notes: data.notes || '',
+          attendance_proof: data.attendance_proof || null
         })
         console.log('Attendance submission response:', response.data)
         
-        if (response.data.success) {
-          // Refresh records after successful submission
-          await this.fetchRecords()
-          return response.data
-        } else {
-          throw new Error(response.data.error || 'Failed to submit attendance')
-        }
+        // Refresh records after successful submission
+        await this.fetchRecords()
+        return response.data
       } catch (error) {
         console.error('Error submitting attendance:', error)
         console.error('Error response:', error.response?.data)
@@ -193,19 +139,57 @@ export const useAttendanceStore = defineStore('attendance', {
       }
     },
 
+    async updateAttendance(recordId, data) {
+      this.loading = true
+      try {
+        const response = await apiClient.patch(`/attendance/${recordId}`, {
+          student_name: data.student_name,
+          tutoring_date: data.tutoring_date,
+          tutoring_time: data.tutoring_time,
+          topic: data.topic,
+          duration: data.duration,
+          status: data.status,
+          notes: data.notes || '',
+          attendance_proof: data.attendance_proof || null
+        })
+        
+        // Refresh records after successful update
+        await this.fetchRecords()
+        return response.data
+      } catch (error) {
+        console.error('Error updating attendance:', error)
+        this.error = error.response?.data?.error || error.message
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
     async deleteRecord(recordId) {
       this.loading = true
       try {
-        const response = await axios.delete(`${API_URL}/attendance/${recordId}`)
-        if (response.data.message) {
-          // Refresh records after successful deletion
-          await this.fetchRecords()
-          return response.data
-        } else {
-          throw new Error(response.data.error || 'Failed to delete record')
-        }
+        const response = await apiClient.delete(`/attendance/${recordId}`)
+        
+        // Refresh records after successful deletion
+        await this.fetchRecords()
+        return response.data
       } catch (error) {
         console.error('Error deleting record:', error)
+        this.error = error.response?.data?.error || error.message
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async getUserProfile() {
+      this.loading = true
+      try {
+        const response = await apiClient.get(`/profile`)
+        this.currentUser = response.data.data || response.data
+        return this.currentUser
+      } catch (error) {
+        console.error('Error getting user profile:', error)
         this.error = error.response?.data?.error || error.message
         throw error
       } finally {
@@ -244,15 +228,31 @@ export function useAttendance() {
     queryFn: () => fetchRecords({ page: 1, limit: 25 })
   })
 
+  const userProfileQuery = useQuery({
+    queryKey: ['userProfile'],
+    queryFn: getUserProfile,
+    enabled: !!localStorage.getItem('authToken')
+  })
+
   // Filtered records for current user
   const userRecords = computed(() => {
     if (!recordsQuery.data.value || !store.currentUser) return []
-    return recordsQuery.data.value.filter(record => record.nama_tutor === store.currentUser.name)
+    return recordsQuery.data.value.filter(record => record.tutor_id === store.currentUser.id)
   })
 
   // Mutations
   const submitMutation = useMutation({
     mutationFn: submitAttendance,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['records'] })
+    },
+    onError: (error) => {
+      store.setError(error.response?.data?.error || error.message)
+    }
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({ recordId, data }) => updateRecord(recordId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['records'] })
     },
@@ -276,14 +276,18 @@ export function useAttendance() {
     tutors: tutorsQuery.data,
     students: studentsQuery.data,
     records: recordsQuery.data,
+    userProfile: userProfileQuery.data,
     userRecords,
+    pagination: computed(() => store.pagination),
     isLoading: computed(() => tutorsQuery.isLoading.value || studentsQuery.isLoading.value || recordsQuery.isLoading.value),
     isError: computed(() => tutorsQuery.isError.value || studentsQuery.isError.value || recordsQuery.isError.value),
     
     // Mutations
     submitAttendance: submitMutation.mutate,
+    updateAttendance: updateMutation.mutate,
     deleteRecord: deleteMutation.mutate,
     isSubmitting: computed(() => submitMutation.isPending.value),
+    isUpdating: computed(() => updateMutation.isPending.value),
     isDeleting: computed(() => deleteMutation.isPending.value)
   }
-} 
+}

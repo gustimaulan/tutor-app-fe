@@ -24,7 +24,19 @@
             />
           </div>
 
-          <!-- Remove password field since backend doesn't require it -->
+          <div>
+            <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
+              Password
+            </label>
+            <input
+              id="password"
+              v-model="password"
+              type="password"
+              required
+              class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors outline-none"
+              placeholder="Enter your password"
+            />
+          </div>
 
           <button
             type="submit"
@@ -56,7 +68,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const email = ref('')
-// Remove password ref
+const password = ref('')
 const error = ref('')
 const loading = ref(false)
 
@@ -65,7 +77,7 @@ const handleSubmit = async () => {
   error.value = ''
   
   try {
-    await authStore.login(email.value) // Only pass email
+    await authStore.login({ email: email.value, password: password.value })
     router.push('/')
   } catch (err) {
     error.value = authStore.error || 'An error occurred during login'

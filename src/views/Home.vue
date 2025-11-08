@@ -30,13 +30,13 @@ onMounted(async () => {
   // Try to fetch user data if not already loaded
   if (!authStore.user && authStore.isAuthenticated) {
     console.log('Fetching user data...')
-    await authStore.fetchUser()
+    await authStore.getCurrentUser()
   }
   
   // If still no user, try to fetch again
   if (!authStore.user && localStorage.getItem('authToken')) {
     console.log('Token exists but no user, trying to fetch user again...')
-    await authStore.fetchUser()
+    await authStore.getCurrentUser()
   }
 })
 </script> 
