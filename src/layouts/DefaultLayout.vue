@@ -1,24 +1,18 @@
 <script setup>
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { computed, ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, watchEffect } from 'vue'
 import { useSwipeNavigation } from '../composables/swipeNavigation'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
-
-const isAuthPage = computed(() => route.path === '/login' || route.path === '/signup')
 const isMobileMenuOpen = ref(false)
 const activePage = computed(() => route.path)
 
 // Swipe navigation setup
 const { useSwipeGesture, swipeDirection } = useSwipeNavigation()
 const mainContentRef = ref(null)
-
-// Debug: Log the current route for troubleshooting
-console.log('Current route:', route.path)
-console.log('Active page computed:', activePage.value)
 
 const handleSignOut = async () => {
   await authStore.logout()
@@ -33,36 +27,9 @@ const closeMobileMenu = () => {
   isMobileMenuOpen.value = false
 }
 
-// Preload component on hover (commented out to avoid issues)
-// const preloadComponent = (componentName) => {
-//   switch (componentName) {
-//     case 'Home':
-//       import('../views/Home.vue')
-//       break
-//     case 'Attendance':
-//       import('../views/Attendance.vue')
-//       break
-//     case 'Login':
-//       import('../views/Login.vue')
-//       break
-//   }
-// }
-
-// Preload routes for faster navigation (commented out to avoid issues)
-// const preloadRoutes = () => {
-//   // Preload all routes immediately
-//   router.resolve('/attendance')
-//   router.resolve('/')
-//   router.resolve('/login')
-//   
-//   // Also preload the actual components
-//   import('../views/Home.vue')
-//   import('../views/Attendance.vue')
-//   import('../views/Login.vue')
-// }
-
 // Add watch effect to close mobile menu on route change
-watch(() => route.path, () => {
+watchEffect(() => {
+  // This will re-run whenever route.path changes
   closeMobileMenu()
 })
 
@@ -85,8 +52,8 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen bg-gray-100">
-    <!-- Header (Hidden on login & signup page) -->
-    <nav v-if="!isAuthPage" class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
+    <!-- Header -->
+    <nav class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <div class="flex">
@@ -210,13 +177,13 @@ onMounted(() => {
     <!-- Main Content -->
     <main 
       ref="mainContentRef"
-      :class="isAuthPage ? '' : 'max-w-7xl mx-auto py-4 lg:px-8 pt-20 pb-20 sm:pb-6'"
+      class="max-w-7xl mx-auto py-4 lg:px-8 pt-20 pb-24 sm:pb-6"
     >
-      <slot></slot>
+      <router-view />
     </main>
 
-    <!-- Mobile Bottom Navigation (Hidden on login & signup page) -->
-    <div v-if="!isAuthPage" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 sm:hidden z-40">
+    <!-- Mobile Bottom Navigation -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 sm:hidden z-40">
       <div class="flex justify-around items-center h-16">
         <router-link
           to="/"

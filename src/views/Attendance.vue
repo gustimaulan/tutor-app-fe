@@ -50,12 +50,14 @@
               <!-- Add Button -->
               <button
                 @click="openSidebar"
-                class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 active:scale-95"
-                title="Add New Record"
+                class="inline-flex items-center px-2 py-2 rounded-full text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                aria-label="Add Attendance Record"
+                title="Add Attendance Record"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
+                <span class="hidden sm:inline ml-2">Add</span>
               </button>
 
               <!-- Edit Button -->
@@ -390,7 +392,7 @@
         </div>
 
         <!-- Footer with Close/Edit Buttons -->
-        <div class="border-t border-gray-200 bg-white p-4 sm:p-4 mt-auto">
+        <div class="border-t border-gray-200 bg-white p-4 sm:p-4">
           <div class="grid grid-cols-2 gap-3">
             <button
               type="button"

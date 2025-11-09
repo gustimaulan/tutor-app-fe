@@ -1,10 +1,8 @@
 import axios from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL
-
 // Create axios instance
 const apiClient = axios.create({
-  baseURL: API_URL,
+  baseURL: '/api/v1', // Menggunakan path relatif untuk di-proxy oleh Vite
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
