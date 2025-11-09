@@ -1,8 +1,11 @@
 import axios from 'axios'
 
+// Resolve API base URL from environment with fallback to dev proxy path
+const baseURL = import.meta.env?.VITE_API_URL || '/api/v1'
+
 // Create axios instance
 const apiClient = axios.create({
-  baseURL: '/api/v1', // Menggunakan path relatif untuk di-proxy oleh Vite
+  baseURL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
