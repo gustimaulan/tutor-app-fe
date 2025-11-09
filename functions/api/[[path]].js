@@ -1,9 +1,13 @@
 // /Users/gdhia/Desktop/GmdhiaRepos/ss-crud/frontend/functions/api/[[path]].js
 
 export async function onRequest(context) {
-  // Alamat backend production Anda
-  // Sebaiknya gunakan Environment Variable di Cloudflare Pages
+  // Ambil URL backend dari environment variable di Cloudflare Pages.
   const backendUrl = context.env.VITE_API_URL;
+
+  // Jika VITE_API_URL tidak diset di production, kembalikan error agar mudah di-debug.
+  if (!backendUrl) {
+    return new Response('Backend API URL not configured in Cloudflare Pages environment.', { status: 500 });
+  }
 
   // Ambil URL request yang masuk
   const url = new URL(context.request.url);
