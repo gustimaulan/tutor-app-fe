@@ -174,7 +174,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div class="relative dropdown-container">
                             <button
-                              @click.stop="toggleDropdown(record.record_id)"
+                              @click.stop="openDropdownMenu($event, record.record_id)"
                               :data-record-id="record.record_id"
                               class="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                             >
@@ -187,7 +187,8 @@
                             <!-- Dropdown Menu -->
                             <div
                               v-if="openDropdown === record.record_id"
-                              class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-[60] border border-gray-200"
+                              class="fixed w-48 bg-white rounded-md shadow-lg z-[100] border border-gray-200"
+                              :style="{ top: dropdownPosition.top + 'px', left: dropdownPosition.left + 'px' }"
                             >
                               <div class="py-1">
                                 <button
@@ -286,8 +287,8 @@
     />
 
     <!-- Record Details Modal -->
-    <div v-if="selectedRecord" class="fixed inset-0 bg-black/50 justify-centerbg-opacity-50 overflow-y-auto h-full w-full flex items-start justify-center z-50 pt-10 sm:pt-0 sm:items-center" @click="closeDetailModal">
-      <div class="relative w-full max-w-2xl mx-auto bg-white rounded-lg shadow-lg flex flex-col max-h-[90vh] sm:max-h-[80vh]" @click.stop>
+    <div v-if="selectedRecord" class="fixed inset-0 bg-black/50 overflow-y-auto h-full w-full flex items-stretch sm:items-center justify-center z-50 pt-0 sm:pt-0" @click="closeDetailModal">
+      <div class="relative w-full sm:max-w-2xl mx-auto bg-white rounded-none sm:rounded-lg shadow-lg flex flex-col h-screen sm:h-auto sm:max-h-[90vh]" @click.stop>
         <!-- Modal Header -->
         <div class="flex justify-between items-center p-4 sm:p-4 border-b border-gray-200 bg-white">
           <h3 class="text-lg sm:text-lg font-semibold text-gray-900">Record Details</h3>
@@ -390,7 +391,7 @@
 
         <!-- Footer with Close/Edit Buttons -->
         <div class="border-t border-gray-200 bg-white p-4 sm:p-4 mt-auto">
-          <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+          <div class="grid grid-cols-2 gap-3">
             <button
               type="button"
               @click="closeDetailModal"
@@ -457,6 +458,27 @@ const isSidebarOpen = ref(false)
 
 // Dropdown state
 const openDropdown = ref(null)
+const dropdownPosition = ref({ top: 0, left: 0 })
+
+// Open dropdown with fixed positioning to escape overflow clipping
+const openDropdownMenu = (event, recordId) => {
+  const rect = event.currentTarget.getBoundingClientRect()
+  const menuWidth = 192 // Tailwind w-48 = 12rem
+  const spacing = 8
+  // Position horizontally aligned to the button's right edge
+  let left = rect.right - menuWidth
+  // Clamp within viewport
+  left = Math.max(spacing, Math.min(left, window.innerWidth - menuWidth - spacing))
+  // Default drop below the button
+  let top = rect.bottom + spacing
+  const menuHeight = 160 // approximate height of the menu
+  // If it would overflow bottom viewport, flip above the button
+  if (top + menuHeight > window.innerHeight) {
+    top = rect.top - spacing - menuHeight
+  }
+  dropdownPosition.value = { top, left }
+  openDropdown.value = recordId
+}
 
 // Error state
 const error = ref('')

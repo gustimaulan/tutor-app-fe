@@ -165,7 +165,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div class="relative dropdown-container">
                             <button
-                              @click.stop="toggleDropdown(student.id)"
+                              @click.stop="openDropdownMenu($event, student.id)"
                               :data-student-id="student.id"
                               class="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                             >
@@ -178,7 +178,8 @@
                             <!-- Dropdown Menu -->
                             <div
                               v-if="openDropdown === student.id"
-                              class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-[60] border border-gray-200"
+                              class="fixed w-48 bg-white rounded-md shadow-lg z-[100] border border-gray-200"
+                              :style="{ top: dropdownPosition.top + 'px', left: dropdownPosition.left + 'px' }"
                             >
                               <div class="py-1">
                                 <button
@@ -403,6 +404,27 @@ const isSubmitting = ref(false)
 
 // Dropdown state
 const openDropdown = ref(null)
+const dropdownPosition = ref({ top: 0, left: 0 })
+
+// Open dropdown with fixed positioning to escape overflow clipping
+const openDropdownMenu = (event, studentId) => {
+  const rect = event.currentTarget.getBoundingClientRect()
+  const menuWidth = 192 // Tailwind w-48 = 12rem
+  const spacing = 8
+  // Position horizontally aligned to the button's right edge
+  let left = rect.right - menuWidth
+  // Clamp within viewport
+  left = Math.max(spacing, Math.min(left, window.innerWidth - menuWidth - spacing))
+  // Default drop below the button
+  let top = rect.bottom + spacing
+  const menuHeight = 120 // approximate height of the menu
+  // If it would overflow bottom viewport, flip above the button
+  if (top + menuHeight > window.innerHeight) {
+    top = rect.top - spacing - menuHeight
+  }
+  dropdownPosition.value = { top, left }
+  openDropdown.value = studentId
+}
 
 // Form data
 const formData = ref({

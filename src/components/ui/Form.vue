@@ -800,18 +800,18 @@ const hideStudentSuggestions = () => {
 
             <!-- Footer with Actions -->
             <div class="border-t border-gray-200 bg-white p-4 sm:p-4 sticky bottom-0">
-              <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+              <div class="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   @click="closeSidebar"
-                  class="flex-1 inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-6 py-3 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+                  class="w-full inline-flex justify-center items-center rounded-lg border border-gray-300 shadow-sm px-6 py-3 min-h-[44px] bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   @click="handleSubmit"
                   :disabled="isSubmitting || isUploading || isCompressing || !isFormValid"
-                  class="flex-1 inline-flex justify-center items-center rounded-lg border border-transparent shadow-sm px-6 py-3 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  class="w-full inline-flex justify-center items-center rounded-lg border border-transparent shadow-sm px-6 py-3 min-h-[44px] bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   <svg v-if="isSubmitting || isUploading || isCompressing" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
