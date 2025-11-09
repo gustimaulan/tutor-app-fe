@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { loginAction, logoutAction, getCurrentUserAction } from '../actions/authActions.js'
+import { loginAction, logoutAction, getCurrentUserAction, registerAction } from '../actions/authActions.js'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -22,29 +22,26 @@ export const useAuthStore = defineStore('auth', {
     async login(credentials) {
       this.isLoading = true
       this.error = null
-      
+
       const result = await loginAction(credentials)
-      
+
       if (result.success) {
-        // Store JWT token from response
         if (result.data.token) {
           this.token = result.data.token
           localStorage.setItem('authToken', result.data.token)
         }
-        
-        // Store user data from login response if available
+
         if (result.data.user) {
           this.user = result.data.user
-          console.log('Auth store - user data set from login:', this.user) // Debug log
+          console.log('Auth store - user data set from login:', this.user)
         } else {
-          // Get user data from /auth/check endpoint
           const userResult = await getCurrentUserAction()
           if (userResult.success) {
             this.user = userResult.data.data || userResult.data
-            console.log('Auth store - user data set from auth check:', this.user) // Debug log
+            console.log('Auth store - user data set from auth check:', this.user)
           }
         }
-        
+
         this.isLoading = false
         return result
       } else {
@@ -56,30 +53,62 @@ export const useAuthStore = defineStore('auth', {
 
     async logout() {
       const result = await logoutAction()
-      
+
       if (result.success) {
         this.user = null
         this.token = null
         this.error = null
+        localStorage.removeItem('authToken')
       }
-      
+
       return result
+    },
+
+    async register(userData) {
+      this.isLoading = true
+      this.error = null
+
+      const result = await registerAction(userData)
+
+      if (result.success) {
+        if (result.data.token) {
+          this.token = result.data.token
+          localStorage.setItem('authToken', result.data.token)
+        }
+
+        if (result.data.user) {
+          this.user = result.data.user
+          console.log('Auth store - user data set from register:', this.user)
+        } else {
+          const userResult = await getCurrentUserAction()
+          if (userResult.success) {
+            this.user = userResult.data.data || userResult.data
+            console.log('Auth store - user data set from auth check:', this.user)
+          }
+        }
+
+        this.isLoading = false
+        return result
+      } else {
+        this.error = result.error
+        this.isLoading = false
+        return result
+      }
     },
 
     async getCurrentUser() {
       if (!this.token) {
         return null
       }
-      
+
       const result = await getCurrentUserAction()
-      
+
       if (result.success) {
         this.user = result.data.data || result.data
-        console.log('Auth store - user data set:', this.user) // Debug log
+        console.log('Auth store - user data set:', this.user)
         return result.data.data || result.data
       } else {
         this.error = result.error
-        // Clear invalid token
         this.token = null
         localStorage.removeItem('authToken')
         return null

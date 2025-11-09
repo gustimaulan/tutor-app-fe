@@ -4,12 +4,28 @@
       <div class="bg-white rounded-2xl shadow-xl p-8 m-4">
         <div class="text-center mb-8">
           <h2 class="text-2xl font-bold text-gray-800">
-            Welcome Back
+            Create Account
           </h2>
-          <p class="text-gray-500 mt-2">Sign in to continue</p>
+          <p class="text-gray-500 mt-2">Sign up to get started</p>
         </div>
 
         <form @submit.prevent="handleSubmit" class="space-y-6" novalidate>
+          <div>
+            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+              Full name
+            </label>
+            <input
+              id="name"
+              v-model="name"
+              type="text"
+              required
+              class="w-full px-4 py-3 rounded-lg border transition-colors outline-none"
+              :class="errors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : 'border-gray-200 focus:border-blue-500 focus:ring-blue-200'"
+              placeholder="Enter your full name"
+            />
+            <p v-if="errors.name" class="mt-1 text-sm text-red-600">{{ errors.name }}</p>
+          </div>
+
           <div>
             <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
               Email address
@@ -35,11 +51,29 @@
               v-model="password"
               type="password"
               required
+              minlength="6"
               class="w-full px-4 py-3 rounded-lg border transition-colors outline-none"
               :class="errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : 'border-gray-200 focus:border-blue-500 focus:ring-blue-200'"
-              placeholder="Enter your password"
+              placeholder="Create a password"
             />
             <p v-if="errors.password" class="mt-1 text-sm text-red-600">{{ errors.password }}</p>
+          </div>
+
+          <div>
+            <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">
+              Confirm password
+            </label>
+            <input
+              id="confirmPassword"
+              v-model="confirmPassword"
+              type="password"
+              required
+              minlength="6"
+              class="w-full px-4 py-3 rounded-lg border transition-colors outline-none"
+              :class="errors.confirmPassword ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : 'border-gray-200 focus:border-blue-500 focus:ring-blue-200'"
+              placeholder="Re-enter your password"
+            />
+            <p v-if="errors.confirmPassword" class="mt-1 text-sm text-red-600">{{ errors.confirmPassword }}</p>
           </div>
 
           <button
@@ -47,7 +81,7 @@
             :disabled="loading"
             class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {{ loading ? 'Signing in...' : 'Sign in' }}
+            {{ loading ? 'Creating account...' : 'Sign up' }}
           </button>
 
           <div v-if="error" class="text-red-500 text-sm text-center bg-red-50 py-2 rounded-lg">
@@ -55,15 +89,15 @@
           </div>
 
           <div class="text-sm text-center text-gray-600">
-            Don't have an account?
-            <a href="/signup" class="text-blue-600 hover:text-blue-700 font-medium">Create account</a>
+            Already have an account?
+            <a href="/login" class="text-blue-600 hover:text-blue-700 font-medium">Sign in</a>
           </div>
         </form>
-        </div>
+      </div>
     </div>
     <div class="flex-shrink-0 flex items-center justify-center space-x-2 mt-32">
-        <h1 class="text-xl font-bold text-gray-900">TutorApp</h1>
-        <span class="text-xs text-gray-500">v1.0.0</span>
+      <h1 class="text-xl font-bold text-gray-900">TutorApp</h1>
+      <span class="text-xs text-gray-500">v1.0.0</span>
     </div>
   </div>
 </template>
@@ -72,29 +106,43 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { registerAction } from '../actions/authActions.js'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
+const name = ref('')
 const email = ref('')
 const password = ref('')
+const confirmPassword = ref('')
+
 const error = ref('')
 const loading = ref(false)
 const errors = ref({})
 
 const validateForm = () => {
   errors.value = {}
-  
+
+  if (!name.value) {
+    errors.value.name = 'Full name is required.'
+  }
+
   if (!email.value) {
     errors.value.email = 'Email address is required.'
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
     errors.value.email = 'Please enter a valid email address.'
   }
-  
+
   if (!password.value) {
     errors.value.password = 'Password is required.'
+  } else if (password.value.length < 6) {
+    errors.value.password = 'Password must be at least 6 characters.'
   }
-  
+
+  if (password.value !== confirmPassword.value) {
+    errors.value.confirmPassword = 'Passwords do not match.'
+  }
+
   return Object.keys(errors.value).length === 0
 }
 
@@ -102,21 +150,41 @@ const handleSubmit = async () => {
   if (!validateForm()) {
     return
   }
-
   loading.value = true
   error.value = ''
-  
+
   try {
-    await authStore.login({ email: email.value, password: password.value })
-    router.push('/')
-  } catch (err) {
-    const errorMessage = authStore.error || 'An error occurred during login';
-    if (errorMessage.toLowerCase().includes('invalid credentials')) {
-      errors.value.password = 'The password you entered is incorrect.';
-      error.value = ''; // Clear the general error message
-    } else {
-      error.value = errorMessage;
+    const payload = {
+      name: name.value,
+      email: email.value,
+      password: password.value,
+      status: 'Aktif'
     }
+
+    const result = await registerAction(payload)
+
+    if (result.success) {
+      const data = result.data || {}
+      const token = data.token
+      const user = data.user || data.data || null
+
+      if (token) {
+        localStorage.setItem('authToken', token)
+        authStore.token = token
+      }
+
+      if (user) {
+        authStore.user = user
+      } else {
+        await authStore.getCurrentUser()
+      }
+
+      router.push('/')
+    } else {
+      error.value = result.error || 'Registration failed'
+    }
+  } catch (err) {
+    error.value = err?.message || 'An error occurred during registration'
   } finally {
     loading.value = false
   }

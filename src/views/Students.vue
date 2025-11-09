@@ -43,6 +43,18 @@
                 </select>
                 <span class="text-sm text-gray-600">entries</span>
               </div>
+              <!-- Add Student (Plus) Button -->
+              <button
+                @click="openAddModal"
+                class="inline-flex items-center px-3 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                aria-label="Add Student"
+                title="Add Student"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span class="hidden sm:inline ml-2">Add</span>
+              </button>
             </div>
           </div>
           
@@ -71,7 +83,7 @@
             </div>
 
             <!-- Table with Data -->
-            <div v-else-if="isLoading || (filteredStudents && filteredStudents.length > 0)" class="border border-gray-200 rounded-lg">
+            <div v-else-if="filteredStudents && filteredStudents.length > 0" class="border border-gray-200 rounded-lg">
               <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                   <thead class="bg-gray-50">
@@ -95,7 +107,7 @@
                   </thead>
                   <tbody class="bg-white divide-y divide-gray-200">
                     <!-- Loading rows - Only show on initial load when no data exists yet -->
-                    <template v-if="isLoading">
+                    <template v-if="isLoading && (!students || students.length === 0)">
                       <tr v-for="i in 3" :key="`loading-${i}`">
                         <td class="px-6 py-4 whitespace-nowrap">
                           <div class="animate-pulse">

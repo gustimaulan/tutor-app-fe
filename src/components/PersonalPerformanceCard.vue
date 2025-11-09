@@ -362,15 +362,13 @@ const getDateRange = (period) => {
     
     case 'thisWeek':
       // Show from Monday up to today
-      const dayOfWeek = today.getDay() // 0 is Sunday, 1 is Monday, etc.
-      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
+      const dayOfWeek = today.getDay(); // 0 is Sunday, 1 is Monday, etc.
+      const mondayOffset = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek); // Adjust so Monday is the start
       const monday = new Date(today)
       monday.setDate(today.getDate() + mondayOffset)
-      const daysToShow = dayOfWeek === 0 ? 6 : dayOfWeek // If Sunday, show 6 days (Mon-Sat)
-      const endOfWeek = new Date(monday)
-      endOfWeek.setDate(monday.getDate() + daysToShow)
-      // Add one day to include today's date
-      endOfWeek.setDate(endOfWeek.getDate() + 1)
+      const endOfWeek = new Date(today);
+      endOfWeek.setDate(today.getDate() + 1); // End of today
+
       return {
         start: monday,
         end: endOfWeek
@@ -378,14 +376,12 @@ const getDateRange = (period) => {
     
     case 'lastWeek':
       // Always 7 days, Monday to Sunday
-      const lastWeekDayOfWeek = today.getDay()
-      const lastWeekMondayOffset = lastWeekDayOfWeek === 0 ? -6 : 1 - lastWeekDayOfWeek
+      const lastWeekDayOfWeek = today.getDay();
+      const lastWeekMondayOffset = (lastWeekDayOfWeek === 0 ? -6 : 1 - lastWeekDayOfWeek);
       const lastMonday = new Date(today)
       lastMonday.setDate(today.getDate() + lastWeekMondayOffset - 7)
       const endOfLastWeek = new Date(lastMonday)
-      endOfLastWeek.setDate(lastMonday.getDate() + 7)
-      // Add one day to include the end date
-      endOfLastWeek.setDate(endOfLastWeek.getDate() + 1)
+      endOfLastWeek.setDate(lastMonday.getDate() + 7);
       return {
         start: lastMonday,
         end: endOfLastWeek
@@ -393,9 +389,9 @@ const getDateRange = (period) => {
     
     case 'thisMonth':
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-      const endOfMonth = new Date(now.getTime() + 24 * 60 * 60 * 1000)
-      // Add one day to include today's date
-      endOfMonth.setDate(endOfMonth.getDate() + 1)
+      const endOfMonth = new Date(today)
+      // End is exclusive: set to start of tomorrow to include all of today
+      endOfMonth.setDate(today.getDate() + 1)
       return {
         start: startOfMonth,
         end: endOfMonth
@@ -404,8 +400,6 @@ const getDateRange = (period) => {
     case 'lastMonth':
       const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
       const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-      // Add one day to include the end date
-      endOfLastMonth.setDate(endOfLastMonth.getDate() + 1)
       return {
         start: startOfLastMonth,
         end: endOfLastMonth
@@ -413,9 +407,9 @@ const getDateRange = (period) => {
     
     case 'thisYear':
       const startOfYear = new Date(now.getFullYear(), 0, 1)
-      const endOfYear = new Date(now.getTime() + 24 * 60 * 60 * 1000)
-      // Add one day to include today's date
-      endOfYear.setDate(endOfYear.getDate() + 1)
+      const endOfYear = new Date(today)
+      // End is exclusive: start of tomorrow to include all of today
+      endOfYear.setDate(today.getDate() + 1)
       return {
         start: startOfYear,
         end: endOfYear
@@ -427,16 +421,19 @@ const getDateRange = (period) => {
 }
 
 const isDateInRange = (dateString, range) => {
-  if (!dateString) return false
-  
-  // Convert range dates to YYYY-MM-DD format for string comparison
-  const rangeStartStr = range.start.toISOString().split('T')[0]
-  const rangeEndStr = range.end.toISOString().split('T')[0]
-  
-  console.log(`Comparing ${dateString} with range ${rangeStartStr} to ${rangeEndStr}`)
-  
-  // Simple string comparison for YYYY-MM-DD format
-  return dateString >= rangeStartStr && dateString < rangeEndStr
+  if (!dateString || typeof dateString !== 'string') return false;
+
+  // IMPORTANT FIX: Create a Date object by parsing the string as a local date, not UTC.
+  // Appending 'T00:00:00' makes JavaScript treat it as local time.
+  // new Date('2024-06-08') -> Sat Jun 08 2024 00:00:00 GMT+0000 (UTC) -> WRONG
+  // new Date('2024-06-08T00:00:00') -> Sat Jun 08 2024 00:00:00 GMT+0700 (Local) -> CORRECT
+  const recordDate = new Date(dateString + 'T00:00:00');
+
+  // Ensure the date is valid before comparing
+  if (isNaN(recordDate.getTime())) return false;
+
+  // Compare the date object against the range
+  return recordDate >= range.start && recordDate < range.end;
 }
 
 // Fix the filteredRecords computed property
@@ -546,24 +543,18 @@ const chartData = computed(() => {
   console.log('User records length:', userRecords.value?.length)
   console.log('User records sample:', userRecords.value?.slice(0, 3))
   
-  // Calculate sessions per period using string comparison
+  // Calculate sessions per period using full datetime bucketing to avoid hour shifts
   const sessionsPerPeriod = periods.map(period => {
-  const periodStartStr = period.start.toISOString().split('T')[0]
-  const periodEndStr = period.end.toISOString().split('T')[0]
-  
-  // Filter out undefined/null records and use correct field name 'tanggal' or 'tutoring_date'
-  const validRecords = userRecords.value.filter(record => record && (record.tanggal || record.tutoring_date))
-  console.log(`Valid records for period ${periodStartStr}-${periodEndStr}:`, validRecords.length)
-  
-  const sessionsInPeriod = validRecords.filter(record => {
-  const recordDate = record.tanggal || record.tutoring_date
-  const inRange = recordDate >= periodStartStr && recordDate < periodEndStr
-  console.log(`Record ${recordDate} in period ${periodStartStr}-${periodEndStr}:`, inRange)
-  return inRange
-  }).length
-  
-  console.log(`Period ${period.label}: ${sessionsInPeriod} sessions`)
-  return sessionsInPeriod
+    const sessionsInPeriod = filteredRecords.value.filter(record => {
+      const dt = getSessionDateTimeObject(record)
+      if (!dt) return false
+      const inRange = dt >= period.start && dt < period.end
+      console.log(`Record ${getSessionDate(record)} ${getSessionTime(record) || '00:00'} in period ${period.label}:`, inRange)
+      return inRange
+    }).length
+
+    console.log(`Period ${period.label}: ${sessionsInPeriod} sessions`)
+    return sessionsInPeriod
   })
   
   const maxSessionsInPeriod = Math.max(...sessionsPerPeriod, 1)
@@ -610,17 +601,15 @@ const generateTimePeriods = (period, range) => {
     case 'today':
     case 'yesterday':
       // Hourly breakdown using Jakarta timezone
-      for (let hour = 0; hour < 24; hour += 4) {
-        // Create Jakarta timezone date
-        const jakartaStart = new Date(start.toLocaleString("en-US", {timeZone: "Asia/Jakarta"}))
-        jakartaStart.setHours(hour, 0, 0, 0)
-        const jakartaEnd = new Date(jakartaStart)
-        jakartaEnd.setHours(hour + 4, 0, 0, 0)
+      for (let i = 0; i < 6; i++) { // 6 periods of 4 hours
+        const hourStart = i * 4;
+        const dayStart = new Date(start.getFullYear(), start.getMonth(), start.getDate(), hourStart);
+        const dayEnd = new Date(start.getFullYear(), start.getMonth(), start.getDate(), hourStart + 4);
         
         periods.push({
-          start: jakartaStart,
-          end: jakartaEnd,
-          label: `${hour.toString().padStart(2, '0')}:00`
+          start: dayStart,
+          end: dayEnd,
+          label: `${hourStart.toString().padStart(2, '0')}:00`
         })
       }
       break
@@ -628,29 +617,20 @@ const generateTimePeriods = (period, range) => {
     case 'thisWeek':
     case 'lastWeek':
       // Daily breakdown for exactly 7 days, starting from Monday
-      const startDate = new Date(start)
-      const dayOfWeek = startDate.getDay() // 0 is Sunday, 1 is Monday, etc.
-      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-      startDate.setDate(startDate.getDate() + mondayOffset)
-      
-      console.log('generateTimePeriods: thisWeek/lastWeek')
-      console.log('Original start:', start)
-      console.log('Start date after Monday offset:', startDate)
-      console.log('Day of week:', dayOfWeek)
-      console.log('Monday offset:', mondayOffset)
+      // Use the start date from the range, which is already calculated to be Monday.
+      const monday = new Date(start);
       
       for (let i = 0; i < 7; i++) {
-        const dayStart = new Date(startDate)
-        dayStart.setDate(startDate.getDate() + i)
-        const dayEnd = new Date(dayStart)
-        dayEnd.setDate(dayStart.getDate() + 1)
+        // Create dates in a way that avoids timezone shifts.
+        const dayStart = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+        const dayEnd = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i + 1);
         
         const period = {
           start: new Date(dayStart),
           end: new Date(dayEnd),
-          label: dayStart.toLocaleDateString('en-US', { weekday: 'short' })
+          // Use 'Asia/Jakarta' to ensure the weekday is correct for the user's timezone.
+          label: dayStart.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'Asia/Jakarta' })
         }
-        
         console.log(`Period ${i}:`, {
           start: period.start.toISOString().split('T')[0],
           end: period.end.toISOString().split('T')[0],
@@ -890,6 +870,28 @@ const getSessionTime = (session) => {
     return null
   } catch (error) {
     console.error('Error getting session time:', error)
+    return null
+  }
+}
+
+// Build a Date object for a session using local timezone (assumed Asia/Jakarta runtime)
+const getSessionDateTimeObject = (session) => {
+  try {
+    const dateStr = getSessionDate(session)
+    if (!dateStr) return null
+    const timeStr = getSessionTime(session) || '00:00'
+
+    const [y, m, d] = dateStr.split('-').map(n => parseInt(n, 10))
+    const [hh, mm, ssRaw] = timeStr.split(':')
+    const hhNum = parseInt(hh || '0', 10)
+    const mmNum = parseInt(mm || '0', 10)
+    const ssNum = parseInt(ssRaw || '0', 10)
+
+    const dt = new Date(y, (m || 1) - 1, d, hhNum, mmNum, ssNum)
+    if (isNaN(dt.getTime())) return null
+    return dt
+  } catch (error) {
+    console.error('Error building session DateTime:', error)
     return null
   }
 }

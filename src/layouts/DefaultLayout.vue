@@ -8,7 +8,7 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-const isLoginPage = computed(() => route.path === '/login')
+const isAuthPage = computed(() => route.path === '/login' || route.path === '/signup')
 const isMobileMenuOpen = ref(false)
 const activePage = computed(() => route.path)
 
@@ -85,8 +85,8 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen bg-gray-100">
-    <!-- Header (Hidden on login page) -->
-    <nav v-if="!isLoginPage" class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
+    <!-- Header (Hidden on login & signup page) -->
+    <nav v-if="!isAuthPage" class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <div class="flex">
@@ -210,13 +210,13 @@ onMounted(() => {
     <!-- Main Content -->
     <main 
       ref="mainContentRef"
-      :class="isLoginPage ? '' : 'max-w-7xl mx-auto py-4 lg:px-8 pt-20 pb-20 sm:pb-6'"
+      :class="isAuthPage ? '' : 'max-w-7xl mx-auto py-4 lg:px-8 pt-20 pb-20 sm:pb-6'"
     >
       <slot></slot>
     </main>
 
-    <!-- Mobile Bottom Navigation (Hidden on login page) -->
-    <div v-if="!isLoginPage" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 sm:hidden z-40">
+    <!-- Mobile Bottom Navigation (Hidden on login & signup page) -->
+    <div v-if="!isAuthPage" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 sm:hidden z-40">
       <div class="flex justify-around items-center h-16">
         <router-link
           to="/"

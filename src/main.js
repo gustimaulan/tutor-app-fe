@@ -5,13 +5,13 @@ import { VueQueryPlugin } from '@tanstack/vue-query'
 import App from './App.vue'
 import './style.css'
 
-// Import components
+/* Import components */
 import Home from './views/Home.vue'
 import Attendance from './views/Attendance.vue'
 import Students from './views/Students.vue'
 import Tutors from './views/Tutors.vue'
 import Login from './views/Login.vue'
-import Test from './views/Test.vue'
+import Signup from './views/Signup.vue'
 import { useAuthStore } from './stores/auth'
 
 // Create router
@@ -43,8 +43,8 @@ const router = createRouter({
       component: Login
     },
     {
-      path: '/test',
-      component: Test
+      path: '/signup',
+      component: Signup
     }
   ]
 })
@@ -78,23 +78,16 @@ authStore.getCurrentUser().catch(() => {
 
 // Navigation guard (after Pinia is installed)
 router.beforeEach(async (to, from, next) => {
-  // Check if route requires auth
-  if (to.meta.requiresAuth) {
-    // Check if user is authenticated
-    if (!authStore.isAuthenticated) {
-      // Try to fetch user data to check for active session
-      try {
-        const user = await authStore.getCurrentUser()
-        if (!user) {
-          // No active session, redirect to login
-          next('/login')
-          return
-        }
-      } catch (error) {
-        // No active session, redirect to login
-        next('/login')
-        return
-      }
+  const requiresAuth = to.meta.requiresAuth;
+  const isAuthenticated = authStore.isAuthenticated;
+  const publicPages = ['/login', '/signup'];
+  const authRequired = !publicPages.includes(to.path);
+
+  // If route requires auth and user is not authenticated
+  if (requiresAuth && !isAuthenticated) {
+    // Try to restore session, if fails, redirect to login.
+    if (!(await authStore.getCurrentUser())) {
+      return next('/login');
     }
     
     // Check if route requires admin
@@ -105,8 +98,8 @@ router.beforeEach(async (to, from, next) => {
     }
   }
   
-  // If going to login page and already authenticated, redirect to home
-  if (to.path === '/login' && authStore.isAuthenticated) {
+  // If user is authenticated and tries to access login/signup, redirect to home
+  if (isAuthenticated && !authRequired) {
     next('/')
     return
   }

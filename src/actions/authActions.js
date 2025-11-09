@@ -77,17 +77,16 @@ export async function getCurrentUserAction() {
   }
 }
 
-// Register action (if needed in the future)
+// Register action
 export async function registerAction(userData) {
   try {
     const response = await apiClient.post('/auth/register', userData)
-    
     return { success: true, data: response.data }
   } catch (error) {
     console.error('Register error:', error)
-    return { 
-      success: false, 
-      error: error.response?.data?.error || error.message || 'Registration failed' 
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message || 'Registration failed'
     }
   }
 }
