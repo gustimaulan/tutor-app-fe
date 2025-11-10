@@ -26,22 +26,20 @@ const routes = [
     ]
   },
   {
-    path: '/login', // Top-level login route under AuthLayout
+    path: '/login', // Rute level atas untuk Login
     component: AuthLayout,
     children: [
+      // Komponen Login dirender di dalam AuthLayout
       { path: '', name: 'Login', component: Login, meta: { guestOnly: true } },
     ]
   },
   {
-    path: '/signup', // Top-level signup route under AuthLayout
+    path: '/signup', // Rute level atas untuk Signup
     component: AuthLayout,
     children: [
+      // Komponen Signup dirender di dalam AuthLayout
       { path: '', name: 'Signup', component: Signup, meta: { guestOnly: true } },
     ]
-  },
-  {
-    path: '/auth', // Legacy support: redirect to /login
-    redirect: { name: 'Login' }
   },
 ]
 

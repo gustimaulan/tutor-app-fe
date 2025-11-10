@@ -1,11 +1,14 @@
 import axios from 'axios'
-
-// Resolve API base URL from environment with fallback to dev proxy path
-const baseURL = import.meta.env?.VITE_API_URL || '/api/v1'
+import router from '../router' // Impor instance router
 
 // Create axios instance
 const apiClient = axios.create({
-  baseURL,
+  // SELALU gunakan path relatif ini.
+  // Ini akan memaksa semua request API untuk dikirim ke domain frontend,
+  // yang kemudian akan ditangani oleh proxy yang sesuai:
+  // - Vite dev server proxy saat development.
+  // - Cloudflare Pages Function (`/functions/api`) saat production.
+  baseURL: '/api/v1',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -38,7 +41,10 @@ apiClient.interceptors.response.use(
       localStorage.removeItem('authToken')
       localStorage.removeItem('userEmail')
       localStorage.removeItem('userPassword')
-      window.location.href = '/login'
+      // Gunakan router untuk navigasi SPA yang mulus, hindari full refresh
+      if (router.currentRoute.value.name !== 'Login') {
+        router.push({ name: 'Login' }); // Ini sudah menggunakan named route, jadi tidak perlu diubah.
+      }
     }
     return Promise.reject(error)
   }
