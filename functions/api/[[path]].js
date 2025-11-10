@@ -23,10 +23,21 @@ export async function onRequest(context) {
   const incomingUrl = new URL(request.url);
 
   // Choose upstream origin: prefer env, fallback to local
+  // Determine environment and safe default origin.
+  // Avoid defaulting to localhost when running on Cloudflare Pages (prod).
+  const isLocal =
+    incomingUrl.hostname === 'localhost' ||
+    incomingUrl.hostname === '127.0.0.1' ||
+    incomingUrl.hostname.endsWith('.local');
+
+  const defaultOrigin = isLocal
+    ? 'http://localhost:8787'
+    : 'https://tutor-app-api.sigmath.net';
+
   const upstreamOrigin =
     env.BACKEND_URL ||
     env.API_BASE_URL ||
-    'http://localhost:8787';
+    defaultOrigin;
 
   // Build target URL by preserving the entire path and query
   // Example:
@@ -55,26 +66,35 @@ export async function onRequest(context) {
     redirect: 'manual',
   };
 
-  const upstreamResponse = await fetch(targetUrl, init);
+  try {
+    const upstreamResponse = await fetch(targetUrl, init);
 
-  // Copy response headers and adjust where appropriate
-  const respHeaders = new Headers(upstreamResponse.headers);
-  // Let Cloudflare handle compression
-  respHeaders.delete('content-encoding');
-  respHeaders.delete('transfer-encoding');
+    // Copy response headers and adjust where appropriate
+    const respHeaders = new Headers(upstreamResponse.headers);
+    // Let Cloudflare handle compression
+    respHeaders.delete('content-encoding');
+    respHeaders.delete('transfer-encoding');
 
-  // Same-origin to the browser, but keep permissive CORS in case
-  // assets or iframes hit this route in different contexts.
-  const cors = corsHeaders(request);
-  respHeaders.set('Access-Control-Allow-Origin', cors.get('Access-Control-Allow-Origin'));
-  respHeaders.set('Access-Control-Allow-Credentials', cors.get('Access-Control-Allow-Credentials'));
-  respHeaders.set('Access-Control-Expose-Headers', cors.get('Access-Control-Expose-Headers'));
+    // Same-origin to the browser, but keep permissive CORS in case
+    // assets or iframes hit this route in different contexts.
+    const cors = corsHeaders(request);
+    respHeaders.set('Access-Control-Allow-Origin', cors.get('Access-Control-Allow-Origin'));
+    respHeaders.set('Access-Control-Allow-Credentials', cors.get('Access-Control-Allow-Credentials'));
+    respHeaders.set('Access-Control-Expose-Headers', cors.get('Access-Control-Expose-Headers'));
 
-  return new Response(upstreamResponse.body, {
-    status: upstreamResponse.status,
-    statusText: upstreamResponse.statusText,
-    headers: respHeaders,
-  });
+    return new Response(upstreamResponse.body, {
+      status: upstreamResponse.status,
+      statusText: upstreamResponse.statusText,
+      headers: respHeaders,
+    });
+  } catch (err) {
+    // Helpful diagnostics for Cloudflare 1003/edge fetch failures
+    const message = `Upstream fetch failed. Ensure BACKEND_URL is configured on Cloudflare Pages. Attempted origin: ${upstreamOrigin}`;
+    return new Response(JSON.stringify({ error: message }), {
+      status: 502,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 }
 
 /**
